@@ -414,7 +414,7 @@
       <!-- TODO: add a location from the beginning of the entrance of the mine -->
       <pose>-46.48 2.05 1.05 -0.01 -0.03 0.68</pose> <!-- section 02 -->
       <include merge="true">
-        <uri>package://spot_description/models/spot</uri>
+        <uri>package://spot_description_sim/models/spot</uri>
       </include>
     </model>
 

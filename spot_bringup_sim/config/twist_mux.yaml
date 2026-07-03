@@ -1,0 +1,19 @@
+twist_mux:
+  ros__parameters:
+    topics:
+      controller:
+        topic: controller/cmd_vel
+        timeout: 0.5
+        priority: 100
+      keyboard:
+        topic: keyboard/cmd_vel
+        timeout: 0.5
+        priority: 90
+      hololens:
+        topic: hololens/cmd_vel
+        timeout: 0.5
+        priority: 80
+      navigation:
+        topic: nav_stack/cmd_vel
+        timeout: 0.5
+        priority: 10

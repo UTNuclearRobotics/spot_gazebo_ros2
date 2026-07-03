@@ -10,6 +10,7 @@
   <license>BSD</license>
 
   <depend>rclcpp</depend>
+  <depend>ros_gz_interfaces</depend>
   <depend>rclpy</depend>
   <depend>champ</depend>
   <depend>champ_msgs</depend>

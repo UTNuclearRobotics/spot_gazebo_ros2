@@ -122,12 +122,14 @@ void StateEstimation::synchronized_callback_(const std::shared_ptr<sensor_msgs::
                                 const std::shared_ptr<champ_msgs::msg::ContactsStamped const>& contacts_msg)
 {
     last_sync_time_ = clock_.now();
-
+    
     float current_joint_positions[12];
 
     for(size_t i = 0; i < joints_msg->name.size(); i++)
     {
-        std::vector<std::string>::iterator itr = std::find(joint_names_.begin(), joint_names_.end(), joints_msg->name[i]);
+        auto itr = std::find(joint_names_.begin(), joint_names_.end(), joints_msg->name[i]);
+        if (itr == joint_names_.end())
+            continue;  // skip joints CHAMP doesn't track (arm, gripper, etc.)
         int index = std::distance(joint_names_.begin(), itr);
         current_joint_positions[index] = joints_msg->position[i];
     }

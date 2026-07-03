@@ -1,0 +1,181 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="server_rack_model">
+    <static>true</static>
+
+    <link name="rack_body">
+
+      <inertial>
+        <mass>60.0</mass>
+        <pose>0 0 0.9335 0 0 0</pose>
+        <inertia>
+          <ixx>15.0</ixx>
+          <iyy>12.0</iyy>
+          <izz>5.0</izz>
+        </inertia>
+      </inertial>
+
+      <!-- Single bounding-box collision for cheap physics -->
+      <collision name="rack_collision">
+        <pose>0 0 0.9335 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.61 1.07 1.8669</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <!-- ===================== VISUALS ===================== -->
+
+      <!-- Bottom plate -->
+      <visual name="bottom_plate">
+        <pose>0 0 0.01 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.61 1.07 0.02</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.08 0.08 0.08 1</ambient>
+          <diffuse>0.12 0.12 0.12 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- Top plate -->
+      <visual name="top_plate">
+        <pose>0 0 1.8569 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.61 1.07 0.02</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.08 0.08 0.08 1</ambient>
+          <diffuse>0.12 0.12 0.12 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- Corner posts (4x), square 0.04 x 0.04 cross-section -->
+      <visual name="post_front_left">
+        <pose>-0.285 -0.515 0.9335 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.04 0.04 1.8669</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.05 0.05 0.05 1</ambient>
+          <diffuse>0.1 0.1 0.1 1</diffuse>
+        </material>
+      </visual>
+
+      <visual name="post_front_right">
+        <pose>0.285 -0.515 0.9335 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.04 0.04 1.8669</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.05 0.05 0.05 1</ambient>
+          <diffuse>0.1 0.1 0.1 1</diffuse>
+        </material>
+      </visual>
+
+      <visual name="post_back_left">
+        <pose>-0.285 0.515 0.9335 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.04 0.04 1.8669</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.05 0.05 0.05 1</ambient>
+          <diffuse>0.1 0.1 0.1 1</diffuse>
+        </material>
+      </visual>
+
+      <visual name="post_back_right">
+        <pose>0.285 0.515 0.9335 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.04 0.04 1.8669</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.05 0.05 0.05 1</ambient>
+          <diffuse>0.1 0.1 0.1 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- Side panels (left/right) -->
+      <visual name="side_panel_left">
+        <pose>-0.295 0 0.9335 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.02 1.07 1.8669</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.12 0.12 0.12 1</ambient>
+          <diffuse>0.18 0.18 0.18 1</diffuse>
+        </material>
+      </visual>
+
+      <visual name="side_panel_right">
+        <pose>0.295 0 0.9335 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.02 1.07 1.8669</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.12 0.12 0.12 1</ambient>
+          <diffuse>0.18 0.18 0.18 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- Back panel -->
+      <visual name="back_panel">
+        <pose>0 0.525 0.9335 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.61 0.02 1.8669</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.1 0.1 0.1 1</ambient>
+          <diffuse>0.15 0.15 0.15 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- Front mounting rails (19" / 0.4826m apart), thin vertical strips -->
+      <visual name="mount_rail_left">
+        <pose>-0.2413 -0.515 0.9335 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.03 0.03 1.8669</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.3 0.3 0.3 1</ambient>
+          <diffuse>0.4 0.4 0.4 1</diffuse>
+        </material>
+      </visual>
+
+      <visual name="mount_rail_right">
+        <pose>0.2413 -0.515 0.9335 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.03 0.03 1.8669</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.3 0.3 0.3 1</ambient>
+          <diffuse>0.4 0.4 0.4 1</diffuse>
+        </material>
+      </visual>
+
+    </link>
+  </model>
+</sdf>

@@ -97,7 +97,7 @@
   <model name="spot">
     <pose>18.22 5.29 0.7 0.0 0.0 0.1</pose>
     <include merge="true">
-      <uri>package://spot_description/models/spot</uri>
+      <uri>package://spot_description_sim/models/spot</uri>
     </include>
   </model>
 

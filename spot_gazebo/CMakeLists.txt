@@ -8,7 +8,7 @@ project(spot_gazebo)
 # The 'set' directive defines a variable (e.g. 'GZ_PLUGIN_VER').
 # Such variables can be used lateron in the CMakeLists.txt file.
 find_package(ament_cmake REQUIRED)
-find_package(spot_description REQUIRED)
+find_package(spot_description_sim REQUIRED)
 
 
 # Following 'install' directive ensures that the 'worlds' subfolder
@@ -17,6 +17,11 @@ find_package(spot_description REQUIRED)
 install(
   DIRECTORY worlds/
   DESTINATION share/${PROJECT_NAME}/worlds
+)
+
+install(
+  DIRECTORY models/
+  DESTINATION share/${PROJECT_NAME}/models
 )
 
 # Following directives are used when testing.
