@@ -54,6 +54,18 @@ install(PROGRAMS
   RENAME stow_arm
 )
 
+install(PROGRAMS
+  scripts/stow_arm_client.py
+  DESTINATION lib/${PROJECT_NAME}
+  RENAME stow_arm_client
+)
+
+install(PROGRAMS
+  scripts/sim_manipulation_driver.py
+  DESTINATION lib/${PROJECT_NAME}
+  RENAME sim_manipulation_driver
+)
+
 install(DIRECTORY launch config rviz maps
   DESTINATION share/${PROJECT_NAME}
 )

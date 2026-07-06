@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<sdf version="1.8">
+<sdf version="1.9">
   <world name="server_room">
 
     <plugin
@@ -29,10 +29,10 @@
         name="ignition::gazebo::systems::UserCommands">
     </plugin>
 
-    <plugin
+    <!-- <plugin
         filename="ignition-gazebo-log-system"
         name="ignition::gazebo::systems::LogRecord">
-    </plugin>
+    </plugin> -->
 
     <gui fullscreen="0">
       <!-- 3D scene -->
@@ -102,7 +102,7 @@
         </ignition-gui>
         <play_pause>true</play_pause>
         <step>true</step>
-        <start_paused>false</start_paused>
+        <start_paused>true</start_paused>
         <use_event>true</use_event>
       </plugin>
 
@@ -338,52 +338,252 @@
     <!-- Rack spacing within row (center-to-center): 0.7m -->
 
     <!-- Row 0 (y = 0) -->
-    <include><uri>model://server_rack_model</uri><name>rack_r0_c0</name><pose>-3.15 0 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r0_c1</name><pose>-2.45 0 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r0_c2</name><pose>-1.75 0 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r0_c3</name><pose>-1.05 0 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r0_c4</name><pose>-0.35 0 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r0_c5</name><pose>0.35 0 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r0_c6</name><pose>1.05 0 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r0_c7</name><pose>1.75 0 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r0_c8</name><pose>2.45 0 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r0_c9</name><pose>3.15 0 0 0 0 0</pose></include>
+    <model name="rack_r0_c0">
+      <pose>-3.15 0 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r0_c1">
+      <pose>-2.45 0 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r0_c2">
+      <pose>-1.75 0 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r0_c3">
+      <pose>-1.05 0 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r0_c4">
+      <pose>-0.35 0 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r0_c5">
+      <pose>0.35 0 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r0_c6">
+      <pose>1.05 0 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r0_c7">
+      <pose>1.75 0 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r0_c8">
+      <pose>2.45 0 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r0_c9">
+      <pose>3.15 0 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
 
     <!-- Row 1 (y = 2.27) -->
-    <include><uri>model://server_rack_model</uri><name>rack_r1_c0</name><pose>-3.15 2.27 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r1_c1</name><pose>-2.45 2.27 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r1_c2</name><pose>-1.75 2.27 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r1_c3</name><pose>-1.05 2.27 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r1_c4</name><pose>-0.35 2.27 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r1_c5</name><pose>0.35 2.27 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r1_c6</name><pose>1.05 2.27 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r1_c7</name><pose>1.75 2.27 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r1_c8</name><pose>2.45 2.27 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r1_c9</name><pose>3.15 2.27 0 0 0 0</pose></include>
+    <model name="rack_r1_c0">
+      <pose>-3.15 2.27 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r1_c1">
+      <pose>-2.45 2.27 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r1_c2">
+      <pose>-1.75 2.27 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r1_c3">
+      <pose>-1.05 2.27 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r1_c4">
+      <pose>-0.35 2.27 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r1_c5">
+      <pose>0.35 2.27 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r1_c6">
+      <pose>1.05 2.27 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r1_c7">
+      <pose>1.75 2.27 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r1_c8">
+      <pose>2.45 2.27 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r1_c9">
+      <pose>3.15 2.27 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
 
     <!-- Row 2 (y = 4.54) -->
-    <include><uri>model://server_rack_model</uri><name>rack_r2_c0</name><pose>-3.15 4.54 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r2_c1</name><pose>-2.45 4.54 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r2_c2</name><pose>-1.75 4.54 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r2_c3</name><pose>-1.05 4.54 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r2_c4</name><pose>-0.35 4.54 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r2_c5</name><pose>0.35 4.54 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r2_c6</name><pose>1.05 4.54 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r2_c7</name><pose>1.75 4.54 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r2_c8</name><pose>2.45 4.54 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r2_c9</name><pose>3.15 4.54 0 0 0 0</pose></include>
+    <model name="rack_r2_c0">
+      <pose>-3.15 4.54 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r2_c1">
+      <pose>-2.45 4.54 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r2_c2">
+      <pose>-1.75 4.54 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r2_c3">
+      <pose>-1.05 4.54 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r2_c4">
+      <pose>-0.35 4.54 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r2_c5">
+      <pose>0.35 4.54 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r2_c6">
+      <pose>1.05 4.54 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r2_c7">
+      <pose>1.75 4.54 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r2_c8">
+      <pose>2.45 4.54 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r2_c9">
+      <pose>3.15 4.54 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
 
     <!-- Row 3 (y = 6.81) -->
-    <include><uri>model://server_rack_model</uri><name>rack_r3_c0</name><pose>-3.15 6.81 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r3_c1</name><pose>-2.45 6.81 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r3_c2</name><pose>-1.75 6.81 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r3_c3</name><pose>-1.05 6.81 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r3_c4</name><pose>-0.35 6.81 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r3_c5</name><pose>0.35 6.81 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r3_c6</name><pose>1.05 6.81 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r3_c7</name><pose>1.75 6.81 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r3_c8</name><pose>2.45 6.81 0 0 0 0</pose></include>
-    <include><uri>model://server_rack_model</uri><name>rack_r3_c9</name><pose>3.15 6.81 0 0 0 0</pose></include>
+    <model name="rack_r3_c0">
+      <pose>-3.15 6.81 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r3_c1">
+      <pose>-2.45 6.81 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r3_c2">
+      <pose>-1.75 6.81 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r3_c3">
+      <pose>-1.05 6.81 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r3_c4">
+      <pose>-0.35 6.81 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r3_c5">
+      <pose>0.35 6.81 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r3_c6">
+      <pose>1.05 6.81 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r3_c7">
+      <pose>1.75 6.81 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r3_c8">
+      <pose>2.45 6.81 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
+    <model name="rack_r3_c9">
+      <pose>3.15 6.81 0 0 0 0</pose>
+      <include merge="true">
+        <uri>model://server_rack_model</uri>
+      </include>
+    </model>
 
   </world>
 </sdf>

@@ -178,10 +178,6 @@ def generate_launch_description():
         ],
         remappings=[
             ('/joint_states', '/spot/joint_states'),
-            # Must match quadruped_controller_node's cmd_vel/smooth remap above.
-            # state_estimation_node uses this as its feed-forward velocity input
-            # for odometry (no wheel encoders on a quadruped) — without it, it
-            # stops publishing odom/base_footprint TF entirely.
             ("/cmd_vel/smooth", "/spot_driver/cmd_vel"),
         ],
     )
@@ -211,9 +207,16 @@ def generate_launch_description():
         ],
     )
 
+    sim_manipulation_driver = Node(
+        package='spot_bringup_sim',
+        executable='sim_manipulation_driver',
+        output='screen',
+        parameters=[{'use_sim_time': True}],
+    )
+
     stow_arm = Node(
         package='spot_bringup_sim',
-        executable='stow_arm',
+        executable='stow_arm_client',
         output='screen',
     )
 
@@ -243,6 +246,7 @@ def generate_launch_description():
         state_estimator,
         base_to_footprint_ekf,
         footprint_to_odom_ekf,
+        sim_manipulation_driver,
         stow_arm,
         twist_mux,
         rviz,

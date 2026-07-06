@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<sdf version="1.8">
+<sdf version="1.9">
   <model name="spot">
     <link name="base_link">
       <inertial>
@@ -418,41 +418,6 @@
           </lens>
         </camera>
       </sensor>
-      <sensor name="back_depth" type="depth_camera">
-        <always_on>1</always_on>
-        <update_rate>30</update_rate>
-        <visualize>true</visualize>
-        <topic>model/spot/camera/back_depth</topic>
-        <visualize>true</visualize>
-        <camera>
-          <horizontal_fov>1.78634</horizontal_fov>
-          <image>
-            <width>424</width>
-            <height>240</height>
-            <format>R_FLOAT32</format>
-          </image>
-          <clip>
-            <near>0.1</near>
-            <far>4</far>
-          </clip>
-          <noise>
-            <type>gaussian</type>
-            <mean>0</mean>
-            <stddev>0.007</stddev>
-          </noise>
-          <lens>
-            <intrinsics>
-              <fx>170.6</fx>
-              <fy>170.6</fy>
-              <cx>211.5</cx>
-              <cy>119.5</cy>
-              <s>0</s>
-            </intrinsics>
-            <type>stereographic</type>
-            <scale_to_hfov>1</scale_to_hfov>
-          </lens>
-        </camera>
-      </sensor>
     </link>
     <joint name="camera_back_j" type="fixed">
       <child>camera_back</child>
@@ -518,40 +483,6 @@
               <fy>257.487</fy>
               <cx>319.5</cx>
               <cy>239.5</cy>
-              <s>0</s>
-            </intrinsics>
-            <type>stereographic</type>
-            <scale_to_hfov>1</scale_to_hfov>
-          </lens>
-        </camera>
-      </sensor>
-      <sensor name="frontleft_depth" type="depth_camera">
-        <always_on>1</always_on>
-        <update_rate>30</update_rate>
-        <visualize>true</visualize>
-        <topic>model/spot/camera/frontleft_depth</topic>
-        <camera>
-          <horizontal_fov>1.78634</horizontal_fov>
-          <image>
-            <width>424</width>
-            <height>240</height>
-            <format>R_FLOAT32</format>
-          </image>
-          <clip>
-            <near>0.1</near>
-            <far>4</far>
-          </clip>
-          <noise>
-            <type>gaussian</type>
-            <mean>0</mean>
-            <stddev>0.007</stddev>
-          </noise>
-          <lens>
-            <intrinsics>
-              <fx>170.6</fx>
-              <fy>170.6</fy>
-              <cx>211.5</cx>
-              <cy>119.5</cy>
               <s>0</s>
             </intrinsics>
             <type>stereographic</type>
@@ -631,40 +562,6 @@
           </lens>
         </camera>
       </sensor>
-      <sensor name="frontright_depth" type="depth_camera">
-        <always_on>1</always_on>
-        <update_rate>30</update_rate>
-        <visualize>true</visualize>
-        <topic>model/spot/camera/frontright_depth</topic>
-        <camera>
-          <horizontal_fov>1.78634</horizontal_fov>
-          <image>
-            <width>424</width>
-            <height>240</height>
-            <format>R_FLOAT32</format>
-          </image>
-          <clip>
-            <near>0.1</near>
-            <far>4</far>
-          </clip>
-          <noise>
-            <type>gaussian</type>
-            <mean>0</mean>
-            <stddev>0.007</stddev>
-          </noise>
-          <lens>
-            <intrinsics>
-              <fx>170.6</fx>
-              <fy>170.6</fy>
-              <cx>211.5</cx>
-              <cy>119.5</cy>
-              <s>0</s>
-            </intrinsics>
-            <type>stereographic</type>
-            <scale_to_hfov>1</scale_to_hfov>
-          </lens>
-        </camera>
-      </sensor>
     </link>
     <joint name="camera_frontright_j" type="fixed">
       <child>camera_frontright</child>
@@ -737,40 +634,6 @@
           </lens>
         </camera>
       </sensor>
-      <sensor name="left_depth" type="depth_camera">
-        <always_on>1</always_on>
-        <update_rate>30</update_rate>
-        <visualize>true</visualize>
-        <topic>model/spot/camera/left_depth</topic>
-        <camera>
-          <horizontal_fov>1.78634</horizontal_fov>
-          <image>
-            <width>424</width>
-            <height>240</height>
-            <format>R_FLOAT32</format>
-          </image>
-          <clip>
-            <near>0.1</near>
-            <far>4</far>
-          </clip>
-          <noise>
-            <type>gaussian</type>
-            <mean>0</mean>
-            <stddev>0.007</stddev>
-          </noise>
-          <lens>
-            <intrinsics>
-              <fx>170.6</fx>
-              <fy>170.6</fy>
-              <cx>211.5</cx>
-              <cy>119.5</cy>
-              <s>0</s>
-            </intrinsics>
-            <type>stereographic</type>
-            <scale_to_hfov>1</scale_to_hfov>
-          </lens>
-        </camera>
-      </sensor>
     </link>
     <joint name="camera_left_j" type="fixed">
       <child>camera_left</child>
@@ -836,40 +699,6 @@
               <fy>257.487</fy>
               <cx>319.5</cx>
               <cy>239.5</cy>
-              <s>0</s>
-            </intrinsics>
-            <type>stereographic</type>
-            <scale_to_hfov>1</scale_to_hfov>
-          </lens>
-        </camera>
-      </sensor>
-      <sensor name="right_depth" type="depth_camera">
-        <always_on>1</always_on>
-        <update_rate>30</update_rate>
-        <visualize>true</visualize>
-        <topic>model/spot/camera/right_depth</topic>
-        <camera>
-          <horizontal_fov>1.78634</horizontal_fov>
-          <image>
-            <width>424</width>
-            <height>240</height>
-            <format>R_FLOAT32</format>
-          </image>
-          <clip>
-            <near>0.1</near>
-            <far>4</far>
-          </clip>
-          <noise>
-            <type>gaussian</type>
-            <mean>0</mean>
-            <stddev>0.007</stddev>
-          </noise>
-          <lens>
-            <intrinsics>
-              <fx>170.6</fx>
-              <fy>170.6</fy>
-              <cx>211.5</cx>
-              <cy>119.5</cy>
               <s>0</s>
             </intrinsics>
             <type>stereographic</type>
@@ -1973,8 +1802,12 @@
         <limit>
           <lower>-2.61799387799149441136</lower>
           <upper>3.14159265358979311599</upper>
-          <effort>90.9</effort><velocity>10.0</velocity>
+          <effort>90.9</effort><velocity>20.0</velocity>
         </limit>
+        <dynamics>
+          <damping>0.5</damping>
+          <friction>0.1</friction>
+        </dynamics>
       </axis>
     </joint>
 
@@ -2008,8 +1841,12 @@
         <limit>
           <lower>-3.14159265358979311599</lower>
           <upper>0.52359877559829881565</upper>
-          <effort>181.8</effort><velocity>10.0</velocity>
+          <effort>181.8</effort><velocity>20.0</velocity>
         </limit>
+        <dynamics>
+          <damping>0.5</damping>
+          <friction>0.1</friction>
+        </dynamics>
       </axis>
     </joint>
 
@@ -2072,8 +1909,12 @@
         <limit>
           <lower>0</lower>
           <upper>3.14159265358979311599</upper>
-          <effort>90.9</effort><velocity>10.0</velocity>
+          <effort>90.9</effort><velocity>20.0</velocity>
         </limit>
+        <dynamics>
+          <damping>0.5</damping>
+          <friction>0.1</friction>
+        </dynamics>
       </axis>
     </joint>
 
@@ -2107,8 +1948,12 @@
         <limit>
           <lower>-2.79252680319092716487</lower>
           <upper>2.79252680319092716487</upper>
-          <effort>90.9</effort><velocity>10.0</velocity>
+          <effort>90.9</effort><velocity>20.0</velocity>
         </limit>
+        <dynamics>
+          <damping>0.5</damping>
+          <friction>0.1</friction>
+        </dynamics>
       </axis>
     </joint>
 
@@ -2142,8 +1987,12 @@
         <limit>
           <lower>-1.83259571459404613236</lower>
           <upper>1.83259571459404613236</upper>
-          <effort>30.3</effort><velocity>10.0</velocity>
+          <effort>30.3</effort><velocity>20.0</velocity>
         </limit>
+        <dynamics>
+          <damping>0.5</damping>
+          <friction>0.1</friction>
+        </dynamics>
       </axis>
     </joint>
 
@@ -2177,8 +2026,12 @@
         <limit>
           <lower>-2.87979326579064354163</lower>
           <upper>2.87979326579064354163</upper>
-          <effort>30.3</effort><velocity>10.0</velocity>
+          <effort>30.3</effort><velocity>20.0</velocity>
         </limit>
+        <dynamics>
+          <damping>0.5</damping>
+          <friction>0.1</friction>
+        </dynamics>
       </axis>
     </joint>
 
@@ -2211,9 +2064,13 @@
         <initial_position>-0.7223</initial_position>
         <limit>
           <lower>-1.57</lower>
-          <upper>0.0</upper>
+          <upper>0.05</upper>
           <effort>15.32</effort><velocity>10.0</velocity>
         </limit>
+        <dynamics>
+          <damping>0.2</damping>
+          <friction>0.05</friction>
+        </dynamics>
       </axis>
     </joint>
 
@@ -2344,38 +2201,38 @@
       <!-- Arm joints — arm0_shoulder_roll is fixed and excluded -->
       <joint_name>arm0_shoulder_yaw</joint_name>
       <position_p_gain>500</position_p_gain>
-      <position_i_gain>1</position_i_gain>
+      <position_i_gain>0</position_i_gain>
       <position_d_gain>20</position_d_gain>
 
       <joint_name>arm0_shoulder_pitch</joint_name>
       <position_p_gain>500</position_p_gain>
-      <position_i_gain>1</position_i_gain>
+      <position_i_gain>0</position_i_gain>
       <position_d_gain>20</position_d_gain>
 
       <joint_name>arm0_elbow_pitch</joint_name>
       <position_p_gain>500</position_p_gain>
-      <position_i_gain>1</position_i_gain>
+      <position_i_gain>0</position_i_gain>
       <position_d_gain>20</position_d_gain>
 
       <joint_name>arm0_elbow_roll</joint_name>
-      <position_p_gain>500</position_p_gain>
-      <position_i_gain>1</position_i_gain>
-      <position_d_gain>20</position_d_gain>
+      <position_p_gain>150</position_p_gain>
+      <position_i_gain>0</position_i_gain>
+      <position_d_gain>1</position_d_gain>
 
       <joint_name>arm0_wrist_pitch</joint_name>
-      <position_p_gain>500</position_p_gain>
-      <position_i_gain>1</position_i_gain>
-      <position_d_gain>20</position_d_gain>
+      <position_p_gain>150</position_p_gain>
+      <position_i_gain>0</position_i_gain>
+      <position_d_gain>2</position_d_gain>
 
       <joint_name>arm0_wrist_roll</joint_name>
-      <position_p_gain>500</position_p_gain>
-      <position_i_gain>1</position_i_gain>
-      <position_d_gain>20</position_d_gain>
+      <position_p_gain>80</position_p_gain>
+      <position_i_gain>0</position_i_gain>
+      <position_d_gain>0.2</position_d_gain>
 
       <joint_name>arm0_fingers</joint_name>
-      <position_p_gain>200</position_p_gain>
-      <position_i_gain>1</position_i_gain>
-      <position_d_gain>10</position_d_gain>
+      <position_p_gain>30</position_p_gain>
+      <position_i_gain>0</position_i_gain>
+      <position_d_gain>0.1</position_d_gain>
     </plugin>
 
   </model>
