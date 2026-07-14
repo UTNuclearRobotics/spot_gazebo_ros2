@@ -10,6 +10,12 @@ project(spot_gazebo)
 find_package(ament_cmake REQUIRED)
 find_package(spot_description_sim REQUIRED)
 
+# Gazebo Ignition Fortress (ign-gazebo6, pairs with ROS 2 Humble) —
+# required for the custom system plugins below.
+find_package(ignition-cmake2 REQUIRED)
+find_package(ignition-gazebo6 REQUIRED)
+find_package(ignition-plugin1 REQUIRED COMPONENTS register)
+
 
 # Following 'install' directive ensures that the 'worlds' subfolder
 # will be copied to the 'share/spot_gazebo/worlds'
@@ -22,6 +28,38 @@ install(
 install(
   DIRECTORY models/
   DESTINATION share/${PROJECT_NAME}/models
+)
+
+# ===================== custom_gazebo_plugins =====================
+# Custom gz-sim (Ignition Fortress) system plugins. Installed to
+# lib/${PROJECT_NAME}/, which the hooks/*.dsv.in environment hook
+# prepends to IGN_GAZEBO_SYSTEM_PLUGIN_PATH — so after
+# 'source install/setup.bash', SDF can reference them by filename
+# (e.g. filename="RfidPdReader") with no extra exports.
+
+add_library(RfidPdReader SHARED
+  custom_gazebo_plugins/RfidPdReader.cc
+)
+set_property(TARGET RfidPdReader PROPERTY CXX_STANDARD 17)
+target_link_libraries(RfidPdReader
+  ignition-gazebo6::ignition-gazebo6
+  ignition-plugin1::ignition-plugin1
+)
+
+# Multi-port reader (AdvanReader-style): N antennas on arbitrary links,
+# incl. articulated ones (arm end effector), TDM port multiplexing.
+add_library(RfidReader SHARED
+  custom_gazebo_plugins/RfidReader.cc
+)
+set_property(TARGET RfidReader PROPERTY CXX_STANDARD 17)
+target_link_libraries(RfidReader
+  ignition-gazebo6::ignition-gazebo6
+  ignition-plugin1::ignition-plugin1
+)
+
+install(
+  TARGETS RfidPdReader RfidReader
+  LIBRARY DESTINATION lib/${PROJECT_NAME}
 )
 
 # Following directives are used when testing.

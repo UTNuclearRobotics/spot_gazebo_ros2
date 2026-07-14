@@ -2,13 +2,30 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>spot_description_sim</name>
-  <version>0.0.0</version>
-  <description>SDFormat description files for the spot_gazebo project</description>
+  <version>0.1.0</version>
+  <description>
+    Simulation description for Spot. The TF-facing URDF is generated from the
+    hardware description (spot_description) plus sim-only frames; the Gazebo
+    SDF is generated from sdf/model.sdf.xacro. Both are produced at build time
+    into models/spot/ so downstream launch files and world includes are
+    unchanged.
+  </description>
   <maintainer email="ygao@missouri.edu">Yixiang Gao</maintainer>
   <license>Apache 2.0</license>
   <author>Yixiang Gao</author>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- xacro is executed at build time to generate model.urdf / model.sdf -->
+  <build_depend>xacro</build_depend>
+  <!-- the sim URDF includes spot_description/urdf/spot.urdf.xacro directly -->
+  <build_depend>spot_description</build_depend>
+  <build_depend>alpha_survey_3d</build_depend>
+
+  <!-- runtime consumers (RViz, gz) resolve package:// mesh URIs from these -->
+  <exec_depend>spot_description</exec_depend>
+  <exec_depend>spot_proprietary_description</exec_depend>
+  <exec_depend>alpha_survey_3d</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
 

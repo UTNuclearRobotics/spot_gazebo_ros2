@@ -1,0 +1,85 @@
+<?xml version="1.0"?>
+<!--
+  sensor_frames_sim.urdf.xacro
+
+  Fixed frames for the simulated body cameras, IMU, and battery. Poses come
+  from spot_frame_properties.xacro and are therefore identical to the sensor
+  link poses in sdf/model.sdf.xacro.
+
+  Why these are in the sim URDF only: on hardware the Spot driver publishes
+  the camera transforms at runtime with per-robot calibration, so they must
+  NOT be baked into the hardware URDF. In simulation nothing publishes them,
+  so before this file existed the bridged camera/imu messages referenced
+  frames that were absent from TF.
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="body_camera_frame" params="name xyz rpy">
+    <link name="camera_${name}"/>
+    <joint name="camera_${name}_j" type="fixed">
+      <parent link="base_link"/>
+      <child link="camera_${name}"/>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:body_camera_frame name="back"       xyz="${camera_back_xyz}"       rpy="${camera_back_rpy}"/>
+  <xacro:body_camera_frame name="frontleft"  xyz="${camera_frontleft_xyz}"  rpy="${camera_frontleft_rpy}"/>
+  <xacro:body_camera_frame name="frontright" xyz="${camera_frontright_xyz}" rpy="${camera_frontright_rpy}"/>
+  <xacro:body_camera_frame name="left"       xyz="${camera_left_xyz}"       rpy="${camera_left_rpy}"/>
+  <xacro:body_camera_frame name="right"      xyz="${camera_right_xyz}"      rpy="${camera_right_rpy}"/>
+
+  <link name="imu"/>
+  <joint name="imu_j" type="fixed">
+    <parent link="base_link"/>
+    <child link="imu"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="battery"/>
+  <joint name="battery_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="battery"/>
+    <origin xyz="${battery_xyz}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- NOTE: arm0_mounting_frame is NOT defined here. It turned out to
+       already exist in hardware's spot_description include (joint
+       arm0_wrist_to_mounting_frame) at the same offset, so alpha_detector.xacro
+       in alpha_survey_3d resolves against that instead. Adding a second
+       definition here caused "link 'arm0_mounting_frame' is not unique." -->
+
+  <!-- Hand cameras: ride the arm chain on the wrist roll link, matching the
+       gz sensors in sdf/model.sdf.xacro. hand_rgb / hand_tof are the
+       x-forward mount frames (identical to the SDF sensor links); the
+       *_sensor children are OPTICAL frames (z out of the lens, standard
+       -90/0/-90 rotation) named to match the Boston Dynamics driver frames
+       that downstream consumers (clasp context_planner etc.) look up.
+       Offsets are NOMINAL; see spot_frame_properties.xacro. -->
+  <link name="hand_rgb"/>
+  <joint name="hand_rgb_j" type="fixed">
+    <parent link="arm0_wrist_roll"/>
+    <child link="hand_rgb"/>
+    <origin xyz="${hand_rgb_x} ${hand_rgb_y} ${hand_rgb_z}" rpy="0 ${hand_rgb_pitch} 0"/>
+  </joint>
+  <link name="hand_color_image_sensor"/>
+  <joint name="hand_color_image_sensor_j" type="fixed">
+    <parent link="hand_rgb"/>
+    <child link="hand_color_image_sensor"/>
+    <origin xyz="0 0 0" rpy="-1.5707963267948966 0 -1.5707963267948966"/>
+  </joint>
+
+  <link name="hand_tof"/>
+  <joint name="hand_tof_j" type="fixed">
+    <parent link="arm0_wrist_roll"/>
+    <child link="hand_tof"/>
+    <origin xyz="${hand_tof_x} ${hand_tof_y} ${hand_tof_z}" rpy="0 ${hand_tof_pitch} 0"/>
+  </joint>
+  <link name="hand_depth_sensor"/>
+  <joint name="hand_depth_sensor_j" type="fixed">
+    <parent link="hand_tof"/>
+    <child link="hand_depth_sensor"/>
+    <origin xyz="0 0 0" rpy="-1.5707963267948966 0 -1.5707963267948966"/>
+  </joint>
+
+</robot>

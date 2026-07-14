@@ -52,6 +52,18 @@ using namespace std::chrono_literals;
 // "still in contact" readings persist into the early part of swing phase.
 static constexpr auto kContactTimeout = 150ms;
 
+// Debounce: require a contact reading to be consistent for this many
+// consecutive received messages before it's allowed to flip the reported
+// state. Gazebo's contact solver can report several rapidly-alternating
+// contact/no-contact events during touchdown (multiple discrete collision
+// events as the foot settles), and champ_base's orientation estimator
+// recomputes the body plane from scratch every cycle using whichever feet
+// are *currently* marked "in contact" -- so unfiltered chatter here
+// directly shows up as visible orientation jitter downstream (lidar cloud
+// appearing to tilt/wobble). This does not need to be large; it only needs
+// to absorb solver-level bounce, not real gait timing.
+static constexpr int kDebounceCount = 3;
+
 class ContactAdapter : public rclcpp::Node
 {
 public:
@@ -60,6 +72,8 @@ public:
   {
     // Index order: 0=left_front, 1=right_front, 2=left_hind, 3=right_hind
     contact_state_.fill(false);
+    pending_state_.fill(false);
+    pending_count_.fill(0);
 
     const std::array<std::string, 4> leg_topics = {
       "/spot/contact/front_left",
@@ -99,8 +113,34 @@ private:
     const ros_gz_interfaces::msg::Contacts::SharedPtr msg,
     size_t leg_index)
   {
-    contact_state_[leg_index] = !msg->contacts.empty();
+    const bool reading = !msg->contacts.empty();
     last_msg_time_[leg_index] = this->get_clock()->now();
+
+    if (reading == contact_state_[leg_index])
+    {
+      // Consistent with current accepted state; nothing pending to confirm.
+      pending_count_[leg_index] = 0;
+      pending_state_[leg_index] = reading;
+      return;
+    }
+
+    if (reading == pending_state_[leg_index])
+    {
+      // Another reading agreeing with the opposite-of-current state.
+      pending_count_[leg_index]++;
+    }
+    else
+    {
+      // First reading of a potential new state change; start counting.
+      pending_state_[leg_index] = reading;
+      pending_count_[leg_index] = 1;
+    }
+
+    if (pending_count_[leg_index] >= kDebounceCount)
+    {
+      contact_state_[leg_index] = reading;
+      pending_count_[leg_index] = 0;
+    }
   }
 
   void publishContactState()
@@ -126,6 +166,8 @@ private:
   }
 
   std::array<bool, 4> contact_state_;
+  std::array<bool, 4> pending_state_;
+  std::array<int, 4> pending_count_;
   std::array<rclcpp::Time, 4> last_msg_time_;
   std::array<rclcpp::Subscription<ros_gz_interfaces::msg::Contacts>::SharedPtr, 4> subscriptions_;
   rclcpp::Publisher<champ_msgs::msg::ContactsStamped>::SharedPtr contacts_publisher_;

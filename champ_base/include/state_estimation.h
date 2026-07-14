@@ -52,6 +52,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <message_filters/sync_policies/approximate_time.h>
 #include <sensor_msgs/msg/imu.hpp>
 
+#include <mutex>
+
 class StateEstimation: public rclcpp::Node
 {
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::JointState, champ_msgs::msg::ContactsStamped> SyncPolicy;
@@ -69,6 +71,11 @@ class StateEstimation: public rclcpp::Node
     
 
     std::unique_ptr<tf2_ros::TransformBroadcaster> base_broadcaster_;
+
+    rclcpp::CallbackGroup::SharedPtr sync_callback_group_;
+    rclcpp::CallbackGroup::SharedPtr imu_callback_group_;
+    rclcpp::CallbackGroup::SharedPtr odom_timer_callback_group_;
+    rclcpp::CallbackGroup::SharedPtr pose_timer_callback_group_;
     
     rclcpp::TimerBase::SharedPtr odom_data_timer_;
     rclcpp::TimerBase::SharedPtr base_pose_timer_;
@@ -91,6 +98,14 @@ class StateEstimation: public rclcpp::Node
 
     champ::QuadrupedBase base_;
     champ::Odometry odometry_;
+
+    // Guards all access to `base_` (joint positions, foot contact state,
+    // foot-position queries) and `current_foot_positions_`, since these are
+    // now written by synchronized_callback_ (sync_callback_group_) and read
+    // by publishFootprintToOdom_ / publishBaseToFootprint_ (their own
+    // Reentrant timer groups), which can run concurrently under the
+    // MultiThreadedExecutor.
+    std::mutex base_mutex_;
 
     std::vector<std::string> joint_names_;
     std::string base_name_;

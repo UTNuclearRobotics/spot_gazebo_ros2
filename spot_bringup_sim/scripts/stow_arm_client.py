@@ -3,9 +3,7 @@
 
 Replaces the standalone stow_arm.py trajectory publisher. Waits for sim time
 to start advancing (same guard as the original), waits for the manipulation
-driver services, then calls ~/stow_arm followed by ~/set_gripper_angle to
-reproduce the original stow_arm.py finger position (-0.7223 rad ~= 41.4 deg
-in the driver's 0-90 deg convention), and exits.
+driver services, then calls ~/stow_arm followed by ~/close_gripper and exits.
 """
 
 import rclpy
@@ -13,10 +11,8 @@ import rclpy.parameter
 from rclpy.node import Node
 from rosgraph_msgs.msg import Clock
 from std_srvs.srv import Trigger
-from spot_msgs.srv import GripperAngleMove
 
 DRIVER_NS = "/spot_manipulation_driver"
-FINGER_STOW_ANGLE_DEG = 41.4  # -0.7223 rad on [0, -1.5708] mapped to [0, 90] deg
 SERVICE_WAIT_TIMEOUT_S = 60.0
 
 
@@ -58,17 +54,16 @@ def main():
     node.get_logger().info('Simulation running — requesting stow via manipulation driver.')
 
     stow_client = node.create_client(Trigger, f'{DRIVER_NS}/stow_arm')
-    gripper_client = node.create_client(GripperAngleMove, f'{DRIVER_NS}/set_gripper_angle')
+    gripper_client = node.create_client(Trigger, f'{DRIVER_NS}/close_gripper')
 
     resp = node.call_and_wait(stow_client, Trigger.Request())
     if resp is None or not resp.success:
         node.get_logger().error(f'Stow failed: {resp.message if resp else "no response"}')
     else:
         node.get_logger().info(f'Stow: {resp.message}')
-        resp = node.call_and_wait(
-            gripper_client, GripperAngleMove.Request(gripper_angle=FINGER_STOW_ANGLE_DEG))
+        resp = node.call_and_wait(gripper_client, Trigger.Request())
         if resp is None or not resp.success:
-            node.get_logger().error(f'Gripper positioning failed: {resp.message if resp else "no response"}')
+            node.get_logger().error(f'Gripper closing failed: {resp.message if resp else "no response"}')
         else:
             node.get_logger().info('Arm stowed via manipulation driver.')
 

@@ -1,16 +1,14 @@
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
-from launch.actions import IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, RegisterEventHandler
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
-from launch_ros.actions import Node
+from launch_ros.actions import Node, ComposableNodeContainer, LoadComposableNodes
 from launch_ros.parameter_descriptions import ParameterFile
-from launch_ros.actions import Node
-from launch_ros.actions import ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode
+from launch.event_handlers import OnProcessStart
 
 def generate_launch_description():
     world_file = LaunchConfiguration('world_file', default='server_room.sdf')
@@ -28,7 +26,7 @@ def generate_launch_description():
 
     rviz_config_file_arg = DeclareLaunchArgument(
         'rviz_config_file',
-        default_value='spot.rviz',
+        default_value='base_planner.rviz',
         description='RViz configuration file to use'
     )
 
@@ -40,11 +38,8 @@ def generate_launch_description():
             os.path.join(pkg_ros_gz_sim, 'launch', 'gz_sim.launch.py')),
             launch_arguments={
                 'gz_args': [
-                    PathJoinSubstitution([
-                        pkg_spot_gazebo, 
-                        'worlds',
-                        world_file
-                    ]),
+                    PathJoinSubstitution([pkg_spot_gazebo, 'worlds', world_file]),
+                    # ' -s -r --headless-rendering',
                 ],
             }.items(),
     )
@@ -59,6 +54,7 @@ def generate_launch_description():
             'use_sim_time': True,
             'config_file': os.path.join(pkg_spot_bringup, 'config', 'spot_bridge.yaml'),
             'qos_overrides./tf_static.publisher.durability': 'transient_local',
+            'qos_overrides./unfiltered_velodyne_points.publisher.reliability': 'best_effort',
         }]
     )
 
@@ -77,7 +73,8 @@ def generate_launch_description():
             {"publish_frequency": 200.0},
         ],
         remappings=[
-            ('/joint_states', '/spot/joint_states')
+            ('/joint_states', '/spot_driver/joint_states'),
+            ('robot_description', '/spot_driver/robot_description')
         ]
     )
 
@@ -136,29 +133,11 @@ def generate_launch_description():
             LaunchConfiguration('rviz_config_file')
         ])],
         condition=IfCondition(LaunchConfiguration('rviz')),
-        parameters=[{'use_sim_time': True}]
-    )
-
-    # Filters the robot body out of the bridged lidar points (already in velodyne frame)
-    pointcloud_filter_container = ComposableNodeContainer(
-        name='spot_pointcloud_filter_container',
-        namespace='',
-        package='rclcpp_components',
-        executable='component_container',
-        composable_node_descriptions=[
-            ComposableNode(
-                name='spot_pointcloud_filter_component',
-                package='spot_navigation',
-                plugin='spot_navigation::PointcloudFilterComponent',
-                remappings=[
-                    ('cloud_in', 'unfiltered_velodyne_points'),
-                    ('cloud_out', 'velodyne_points'),
-                ],
-                extra_arguments=[{'use_intra_process_comms': True}],
-                parameters=[{'use_sim_time': True}],
-            ),
+        parameters=[{'use_sim_time': True}],
+        remappings=[
+            ('/robot_description', '/spot_driver/robot_description'),
+            ('/robot_description_semantic', '/spot_moveit/robot_description_semantic'),
         ],
-        output='screen',
     )
 
     with open(urdf_file, 'r') as infp:
@@ -171,13 +150,13 @@ def generate_launch_description():
         parameters=[
             {"use_sim_time": True},
             {"gazebo": True},
-            {"urdf": urdf_content},   # <-- file CONTENT, not the path
+            {"urdf": urdf_content},
             links_param,
             joints_param,
             gait_param,
         ],
         remappings=[
-            ('/joint_states', '/spot/joint_states'),
+            ('/joint_states', '/spot_driver/joint_states'),
             ("/cmd_vel/smooth", "/spot_driver/cmd_vel"),
         ],
     )
@@ -207,11 +186,50 @@ def generate_launch_description():
         ],
     )
 
+    sim_spot_driver = Node(
+        package='spot_bringup_sim',
+        executable='sim_spot_driver',
+        output='screen',
+        parameters=[{'use_sim_time': True}],
+    )
+
     sim_manipulation_driver = Node(
         package='spot_bringup_sim',
         executable='sim_manipulation_driver',
         output='screen',
-        parameters=[{'use_sim_time': True}],
+        parameters=[{
+            'use_sim_time': True,
+            'action_namespace': 'spot_moveit',
+        }],
+    )
+
+    # Depth-image -> pointcloud for the hand ToF camera, same pipeline as
+    # hardware (spot_driver / spot_manipulation_driver launch).
+    hand_camera_pointclouds = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(get_package_share_directory('spot_bringup'),
+                         'launch', 'camera_pointclouds.launch.py')),
+        launch_arguments={
+            'hand_tof': 'True',
+            'texture': 'False',
+        }.items(),
+    )
+
+    # Attach the pointcloud mux to the depth_image_proc container
+    pointcloud_mux = LoadComposableNodes(
+        target_container='depth_image_proc_container',
+        composable_node_descriptions=[
+            ComposableNode(
+                package='alpha_survey_3d',
+                plugin='alpha_survey_3d::pointcloud_util::PointcloudMux',
+                name='pointcloud_mux',
+                parameters=[
+                    {'mux_pointcloud_topics': ['/spot_pointclouds/hand_tof_points']},
+                    {'use_sim_time': True},
+                ],
+                extra_arguments=[{'use_intra_process_comms': True}],
+            ),
+        ],
     )
 
     stow_arm = Node(
@@ -234,6 +252,35 @@ def generate_launch_description():
         ],
     )
 
+    # Filters the robot body out of the bridged lidar points (already in velodyne frame)
+    pointcloud_filter_container = ComposableNodeContainer(
+        name='spot_pointcloud_filter_container',
+        namespace='',
+        package='rclcpp_components',
+        executable='component_container_mt',
+        composable_node_descriptions=[
+            ComposableNode(
+                name='spot_pointcloud_filter_component',
+                package='spot_navigation',
+                plugin='spot_navigation::PointcloudFilterComponent',
+                remappings=[
+                    ('cloud_in', 'unfiltered_velodyne_points'),
+                    ('cloud_out', 'velodyne_points'),
+                ],
+                extra_arguments=[{'use_intra_process_comms': True}],
+                parameters=[{'use_sim_time': True}],
+            ),
+        ],
+        output='screen',
+    )
+
+    pointcloud_filter_after_bridge = RegisterEventHandler(
+        OnProcessStart(
+            target_action=bridge,
+            on_start=[pointcloud_filter_container],
+        )
+    )
+
     return LaunchDescription([
         world_file_arg,
         rviz_arg,
@@ -242,12 +289,15 @@ def generate_launch_description():
         bridge,
         robot_state_publisher,
         quadruped_controller_node,
-        pointcloud_filter_container,
         state_estimator,
         base_to_footprint_ekf,
         footprint_to_odom_ekf,
+        sim_spot_driver,
         sim_manipulation_driver,
+        hand_camera_pointclouds,
+        pointcloud_mux,
         stow_arm,
         twist_mux,
+        pointcloud_filter_after_bridge,
         rviz,
     ])

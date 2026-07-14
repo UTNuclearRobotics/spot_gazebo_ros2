@@ -13,7 +13,7 @@ footprint_to_odom_ekf:
     #vroll , vpitch, vyaw,
     #ax    , ay    , az
 
-    odom0: /spot/odometry
+    odom0: /spot_driver/odometry
     odom0_config: [true,  true, false,
                false, false, true,
                true,  true, false,

@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<!--
+  rl_kit_lidar_sim.urdf.xacro
+
+  Sim mirror of spot_proprietary_description/urdf/rl_kit_elevated_lidar_mount.xacro.
+  Identical link/joint names and offsets; the only difference is that the
+  VLP-16 frames (velodyne_base_link -> velodyne) are declared inline instead
+  of including velodyne_description/urdf/VLP-16.urdf.xacro, which drags in a
+  Gazebo-Classic plugin block that is useless under gz sim.
+
+  velodyne_base_link -> velodyne offset (0.0377 m) is the VLP-16 macro's
+  internal base->beam-origin transform from velodyne_description.
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <link name="rl_kit_elevated_lidar_mount">
+    <visual name="rl_kit_elevated_lidar_mount_visual">
+      <geometry>
+        <mesh filename="package://spot_proprietary_description/meshes/accessories/elevated_lidar_mount.stl"/>
+      </geometry>
+      <material name="gray">
+        <color rgba="0.1 0.1 0.1 1.0"/>
+      </material>
+    </visual>
+    <collision name="rl_kit_elevated_lidar_mount_collision">
+      <geometry>
+        <box size="0.13 0.115 0.12"/>
+      </geometry>
+      <origin xyz="0 0 0.06"/>
+    </collision>
+  </link>
+  <joint name="rl_kit_velodyne_mount_joint" type="fixed">
+    <parent link="rl_kit_jetson_housing_box"/>
+    <child link="rl_kit_elevated_lidar_mount"/>
+    <origin xyz="${elev_mount_x} 0.0 ${elev_mount_z}"/>
+  </joint>
+
+  <link name="velodyne_base_link">
+    <visual>
+      <geometry>
+        <mesh filename="package://spot_description_sim/models/spot/meshes/lidar_3d_v1.dae"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.03585" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.0516" length="0.0717"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="rl_kit_velodyne_joint" type="fixed">
+    <parent link="rl_kit_elevated_lidar_mount"/>
+    <child link="velodyne_base_link"/>
+    <origin xyz="0 0 ${vlp16_mount_z}"/>
+  </joint>
+
+  <!-- VLP-16 beam-origin frame; matches velodyne_description internal offset -->
+  <link name="velodyne"/>
+  <joint name="velodyne_joint" type="fixed">
+    <parent link="velodyne_base_link"/>
+    <child link="velodyne"/>
+    <origin xyz="0 0 ${vlp16_optical_z}"/>
+  </joint>
+
+</robot>

@@ -12,6 +12,10 @@
 
   <depend>spot_description_sim</depend>
 
+  <!-- Ignition Fortress, for custom_gazebo_plugins -->
+  <depend>ignition-gazebo6</depend>
+  <depend>ignition-plugin</depend>
+
   <test_depend>ament_lint_auto</test_depend>
 
   <export>

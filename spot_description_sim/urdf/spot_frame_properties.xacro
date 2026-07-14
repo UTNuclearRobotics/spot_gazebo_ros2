@@ -1,0 +1,124 @@
+<?xml version="1.0"?>
+<!--
+  spot_frame_properties.xacro
+
+  Single source of truth for every frame offset that is shared between:
+    - urdf/spot.urdf.xacro (robot_state_publisher / CHAMP TF tree), and
+    - sdf/model.sdf.xacro  (Gazebo physics model).
+
+  All scalar values are in meters / radians, expressed in the parent frame,
+  matching the hardware description in spot_description/urdf/spot.urdf.xacro
+  and spot_description/urdf/accessories/rl_kit.xacro. Do NOT edit a number
+  here without checking it against the hardware package first.
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ========== Body / rails / payload (matches hardware spot.urdf.xacro) ========== -->
+  <xacro:property name="front_rail_xyz"    value="0.223 0 0.0805"/>
+  <xacro:property name="rear_rail_xyz"     value="-0.223 0 0.0805"/>
+
+  <!-- base_link -> payload_mount_reference_frame -->
+  <xacro:property name="payload_x" value="0.2075"/>
+  <xacro:property name="payload_z" value="0.0805"/>
+
+  <!-- ========== RL kit chain (matches hardware accessories/rl_kit.xacro) ========== -->
+  <!-- payload_mount_reference_frame -> rl_kit_reference_frame -->
+  <xacro:property name="rl_ref_x" value="-0.292"/>
+  <xacro:property name="rl_ref_z" value="0.056"/>
+  <!-- rl_kit_reference_frame -> rl_kit_jetson_housing_box -->
+  <xacro:property name="jetson_x" value="-0.078"/>
+
+  <!-- ========== Elevated lidar mount + VLP-16 ==========
+       Matches spot_proprietary_description/urdf/rl_kit_elevated_lidar_mount.xacro:
+         jetson_housing_box -> rl_kit_elevated_lidar_mount : (0.01, 0, 0.06)
+         elevated mount     -> VLP-16 macro origin         : (0, 0, 0.12)
+       Plus velodyne_description VLP-16.urdf.xacro internal offset:
+         velodyne_base_link -> velodyne (beam origin)      : (0, 0, 0.0377)      -->
+  <xacro:property name="elev_mount_x" value="0.01"/>
+  <xacro:property name="elev_mount_z" value="0.06"/>
+  <xacro:property name="vlp16_mount_z"   value="0.12"/>
+  <xacro:property name="vlp16_optical_z" value="0.0377"/>
+
+  <!-- Derived absolute (model-frame) poses used by the SDF, replacing the
+       previously hand-computed constants. base_link is at the model origin. -->
+  <xacro:property name="jetson_abs_x" value="${payload_x + rl_ref_x + jetson_x}"/>   <!-- -0.1625 -->
+  <xacro:property name="jetson_abs_z" value="${payload_z + rl_ref_z}"/>              <!--  0.1365 -->
+  <xacro:property name="elev_abs_x"   value="${jetson_abs_x + elev_mount_x}"/>       <!-- -0.1525 -->
+  <xacro:property name="elev_abs_z"   value="${jetson_abs_z + elev_mount_z}"/>       <!--  0.1965 -->
+  <xacro:property name="vlp16_abs_z"  value="${elev_abs_z + vlp16_mount_z}"/>        <!--  0.3165 -->
+
+  <!-- ========== Legs (matches hardware spot.urdf.xacro) ========== -->
+  <xacro:property name="hip_x"          value="0.29785"/>
+  <xacro:property name="hip_y"          value="0.055"/>
+  <xacro:property name="hip_to_upper_y" value="0.110945"/>
+  <xacro:property name="knee_x"         value="0.025"/>
+  <xacro:property name="knee_z"         value="-0.3205"/>
+
+  <!-- CHAMP end-effector frame, lower_leg -> *_ee (sim-only frame).
+       DRIFT NOTE: the pre-migration model.urdf used -0.37 while the
+       pre-migration model.sdf placed the ee link at -0.3365. CHAMP kinematics
+       consumes the URDF value; nothing in Gazebo consumes the SDF ee link.
+       Both artifacts now use the URDF value so the frame means one thing. -->
+  <xacro:property name="foot_offset_z" value="-0.37"/>
+
+  <!-- ========== Body cameras (sim approximation of driver-published frames) ==========
+       On hardware these transforms are published at runtime by the Spot driver
+       with per-robot calibration; the values below are the nominal poses that
+       were previously hard-coded in model.sdf. Parent frame: base_link. -->
+  <xacro:property name="camera_back_xyz"        value="-0.425 0 0.01"/>
+  <xacro:property name="camera_back_rpy"        value="0 0.3 ${pi}"/>
+  <xacro:property name="camera_frontleft_xyz"   value="0.415 0.037 -0.01"/>
+  <xacro:property name="camera_frontleft_rpy"   value="1.35556 0.353917 -0.554196"/>
+  <xacro:property name="camera_frontright_xyz"  value="0.415 -0.037 -0.01"/>
+  <xacro:property name="camera_frontright_rpy"  value="-1.35556 0.353917 0.554196"/>
+  <xacro:property name="camera_left_xyz"        value="-0.125 0.12 0.035"/>
+  <xacro:property name="camera_left_rpy"        value="0 0.2 ${pi/2}"/>
+  <xacro:property name="camera_right_xyz"       value="-0.125 -0.12 0.035"/>
+  <xacro:property name="camera_right_rpy"       value="0 0.2 ${-pi/2}"/>
+
+  <!-- ========== Battery / IMU (parent: base_link) ========== -->
+  <xacro:property name="battery_xyz" value="0 0 -0.03"/>
+  <!-- imu frame is coincident with base_link/body -->
+
+  <!-- ========== Arm (matches hardware arm/spot_arm.urdf.xacro) ========== -->
+  <xacro:property name="arm_mount_x" value="0.292"/>
+  <xacro:property name="arm_mount_z" value="0.188"/>
+  <xacro:property name="arm_sh_to_el_x"  value="0.3385"/>
+  <xacro:property name="arm_el0_to_el1_x" value="0.4033"/>
+  <xacro:property name="arm_el0_to_el1_z" value="0.075"/>
+  <xacro:property name="arm_wr_to_fngr_x" value="0.11745"/>
+  <xacro:property name="arm_wr_to_fngr_z" value="0.014820"/>
+  <xacro:property name="arm_wr_to_tool0_x" value="0.19557"/>
+  <xacro:property name="arm_wr_to_mount_x" value="0.1103"/>
+  <xacro:property name="arm_wr_to_mount_z" value="-0.036"/>
+
+  <!-- Derived absolute (model-frame) arm poses for the SDF -->
+  <xacro:property name="arm_el0_abs_x"  value="${arm_mount_x + arm_sh_to_el_x}"/>                 <!-- 0.6305 -->
+  <xacro:property name="arm_el1_abs_x"  value="${arm_el0_abs_x + arm_el0_to_el1_x}"/>             <!-- 1.0338 -->
+  <xacro:property name="arm_el1_abs_z"  value="${arm_mount_z + arm_el0_to_el1_z}"/>               <!-- 0.263  -->
+  <xacro:property name="arm_fngr_abs_x" value="${arm_el1_abs_x + arm_wr_to_fngr_x}"/>             <!-- 1.15125 -->
+  <xacro:property name="arm_fngr_abs_z" value="${arm_el1_abs_z + arm_wr_to_fngr_z}"/>             <!-- 0.27782 -->
+  <xacro:property name="arm_tool0_abs_x" value="${arm_el1_abs_x + arm_wr_to_tool0_x}"/>           <!-- 1.22937 -->
+  <xacro:property name="arm_mountf_abs_x" value="${arm_el1_abs_x + arm_wr_to_mount_x}"/>          <!-- 1.1441 -->
+  <xacro:property name="arm_mountf_abs_z" value="${arm_el1_abs_z + arm_wr_to_mount_z}"/>          <!-- 0.227  -->
+
+  <!-- Hand cameras (gripper RGB + ToF depth), offsets relative to the wrist
+       roll frame (arm0_wrist_roll / arm0_wrist_roll_link).
+       NOMINAL VALUES: calibrate against the hardware camera extrinsics /
+       driver TF before relying on them metrically. -->
+  <!-- hand_rgb: MEASURED on hardware (tf2_echo arm0_wrist_roll ->
+       hand_color_image_sensor, 2026-07-07): T=[0.138, 0.020, 0.025],
+       RPY=[-1.414, 0, -1.571]. Decomposition: mount pitch = -(pi/2 - 1.414)
+       = -0.1568 rad (~9 deg up-tilt), then standard optical rotation. -->
+  <xacro:property name="hand_rgb_x"     value="0.138"/>
+  <xacro:property name="hand_rgb_y"     value="0.020"/>
+  <xacro:property name="hand_rgb_z"     value="0.025"/>
+  <xacro:property name="hand_rgb_pitch" value="-0.1568"/>
+  <!-- hand_tof: still NOMINAL - measure with
+       tf2_echo arm0_wrist_roll hand_depth_sensor and update like above. -->
+  <xacro:property name="hand_tof_x"     value="0.155"/>
+  <xacro:property name="hand_tof_y"     value="0.0"/>
+  <xacro:property name="hand_tof_z"     value="0.035"/>
+  <xacro:property name="hand_tof_pitch" value="0.0"/>
+
+</robot>

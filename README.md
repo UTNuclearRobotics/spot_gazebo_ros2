@@ -102,7 +102,7 @@ ros2 launch spot_bringup spot.gazebo.launch.py rviz:=false
 
 2. Use `SLAM` to build a map
 ```
-ros2 launch spot_navigation online_async_launch.py
+ros2 launch spot_navigation bringup_launch.py
 ```
 
 3. Once the map is built and saved

@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<!--
+  spot.urdf.xacro (simulation)
+
+  The TF tree published in simulation is, by construction, the hardware TF
+  tree: this file includes spot_description/urdf/spot.urdf.xacro directly
+  (the exact file the hardware robot_state_publisher expands) and then adds
+  only the frames that exist in simulation but are published by other means
+  on the real robot:
+
+    - elevated lidar mount + VLP-16 frames
+        hardware: SPOT_URDF_EXTRAS -> spot_proprietary_description/urdf/
+                  rl_kit_elevated_lidar_mount.xacro (velodyne_description macro)
+        sim:      include/rl_kit_lidar_sim.urdf.xacro (same offsets, no
+                  velodyne_description dependency / classic-Gazebo plugin)
+    - CHAMP end-effector frames (*_ee)         : sim-only, consumed by champ
+    - body camera / imu / battery frames       : published by the Spot driver
+                                                 with calibration on hardware;
+                                                 nominal fixed frames in sim
+
+  Generated at build time into models/spot/model.urdf (see CMakeLists.txt),
+  so spot.gazebo.launch.py and the CHAMP nodes are unchanged.
+
+  NOTE ON ARG DEFAULTS: xacro keeps the FIRST default it sees for an arg, so
+  the sim defaults below must stay above the hardware include to win over the
+  hardware file's defaults.
+-->
+<robot name="spot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Simulation defaults (override hardware defaults; must precede include) -->
+  <xacro:arg name="has_arm"                default="true"/>
+  <xacro:arg name="has_eap"                default="false"/>
+  <xacro:arg name="has_eap_2"              default="false"/>
+  <xacro:arg name="has_rl_kit"             default="true"/>
+  <xacro:arg name="has_realsense"          default="false"/>
+  <xacro:arg name="kinematic_model"        default="none"/>
+  <xacro:arg name="use_proprietary_meshes" default="true"/>
+
+  <xacro:include filename="spot_frame_properties.xacro"/>
+
+  <!-- ==== Hardware description: single source of truth for shared frames ==== -->
+  <xacro:include filename="$(find spot_description)/urdf/spot.urdf.xacro"/>
+
+  <!-- ==== Sim counterparts of runtime-published / extras frames ==== -->
+  <!-- The sim lidar chain is a stand-in for the hardware extras file. If
+       SPOT_URDF_EXTRAS is set at BUILD time, the hardware include above has
+       already pulled in the extras (mount + payload) and the stand-in must
+       not duplicate rl_kit_elevated_lidar_mount. -->
+  <xacro:property name="urdf_extras" value="$(optenv SPOT_URDF_EXTRAS '')"/>
+  <xacro:if value="${urdf_extras == ''}">
+    <xacro:include filename="include/rl_kit_lidar_sim.urdf.xacro"/>
+  </xacro:if>
+  <xacro:include filename="include/feet_sim.urdf.xacro"/>
+  <xacro:include filename="include/sensor_frames_sim.urdf.xacro"/>
+
+</robot>

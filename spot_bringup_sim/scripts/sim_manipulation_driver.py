@@ -12,19 +12,37 @@ Design notes:
     the driver robust to CHAMP's continuous leg-only messages replacing the
     active gz trajectory: the gz controller retains per-joint targets for
     joints not named in a message, so arm targets persist between our updates.
-  * Cartesian interfaces (~/cmd_vel, ~/solve_ik, ~/arm_cartesian_command) are
-    stubbed pending an IK layer (v2). Hardware-only interfaces
-    (image_to_grasp, mobile/body manipulation) are stubbed permanently.
+  * Motion is PACED against the wall clock (time.monotonic/time.sleep), not the
+    sim clock. A named-pose Trigger handler therefore blocks for a bounded
+    amount of *real* time (<= NAMED_POSE_DURATION_S + SETTLE_TIMEOUT_S), so it
+    can never outlast a behavior-tree client's wall-clock service timeout, no
+    matter how low Gazebo's real-time factor is. (The previous version paced on
+    the sim clock via clock.sleep_for(); at RTF < ~0.4 a 1 s move + 3 s settle
+    exceeded the tree's 10 s TriggerService deadline and surfaced as
+    "Service timeout. Failed to trigger service ...". Message stamps still use
+    sim time.) This mirrors the wall-clock loop in sim_spot_driver.py.
+  * The named-pose Trigger services (stow/unstow/mini_unstow + gripper) can
+    optionally return BEFORE the motion finishes -- set the
+    'named_pose_return_immediately' parameter True. The move is then dispatched
+    on a background thread and the service replies instantly; the gz controller
+    holds the streamed targets so the arm keeps moving. Default is False
+    (block and report the real result), which is now safe under the client
+    timeout thanks to wall-clock pacing.
+  * ~/cmd_vel and pose-only ~/arm_cartesian_command goals are stubbed pending
+    an IK layer (v2); ~/arm_cartesian_command goals carrying joint_waypoints
+    (the stable_arm_motion_server path) are executed. ~/solve_ik forwards to
+    MoveIt. Hardware-only interfaces (image_to_grasp, mobile/body
+    manipulation) are stubbed permanently.
 """
 
 import math
 import threading
+import time
 
 import rclpy
 import rclpy.callback_groups
 from rclpy.action import ActionServer, CancelResponse
 from rclpy.action.server import ServerGoalHandle
-from rclpy.duration import Duration
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 from rclpy.time import Time
@@ -40,6 +58,10 @@ from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from spot_msgs.msg import ManipulatorCarryState, ManipulatorStowState
 from spot_msgs.srv import GripperAngleMove, InverseKinematics
 from spot_msgs.action import ArmCartesianCommand, ImageToGrasp
+
+# For the real IK adapter (forwards to MoveIt's /spot_moveit/compute_ik)
+from moveit_msgs.srv import GetPositionIK
+from moveit_msgs.msg import MoveItErrorCodes
 
 ARM_JOINT_ORDER = [
     "arm0_shoulder_yaw",
@@ -78,7 +100,7 @@ GRIPPER_OPEN = -1.5708
 
 STREAM_RATE_HZ = 20.0        # setpoint streaming rate
 SETPOINT_HORIZON_S = 0.1     # time_from_start for each streamed setpoint
-NAMED_POSE_DURATION_S = 4.0  # duration for stow/unstow/gripper moves
+NAMED_POSE_DURATION_S = 1.0  # duration for stow/unstow/gripper moves
 GOAL_TOLERANCE_RAD = 0.05    # matches stow_arm.py
 SETTLE_TIMEOUT_S = 3.0       # extra time allowed after trajectory end
 
@@ -93,16 +115,28 @@ class SimSpotManipulationDriverROS(Node):
         self.declare_parameter("action_namespace", "")
         self.declare_parameter("data_capture_mode", False)
         self.declare_parameter("publish_joint_states", False)
+        # When True, named-pose Trigger services reply as soon as the motion is
+        # dispatched (background thread) instead of blocking until it completes.
+        self.declare_parameter("named_pose_return_immediately", False)
 
         self._joint_positions = {}
         self._joint_lock = threading.Lock()
         self._traj_pub = self.create_publisher(JointTrajectory, "/spot/joint_trajectory", 10)
-        self.create_subscription(JointState, "/spot/joint_states", self._joint_state_cb, 10)
+        self.create_subscription(JointState, "/spot_driver/joint_states", self._joint_state_cb, 10)
 
         # Cancel events, mirroring the real driver
         self._arm_cancel = threading.Event()
+        self._arm_cartesian_cancel = threading.Event()
         self._finger_cancel = threading.Event()
         self._arm_and_finger_cancel = threading.Event()
+
+        # Serialization + cancellation for async (background-thread) named poses.
+        # Arm and gripper are independent channels so an async gripper move never
+        # cancels an in-flight async arm move (they command disjoint joints).
+        self._named_arm_lock = threading.Lock()
+        self._named_arm_cancel = threading.Event()
+        self._named_finger_lock = threading.Lock()
+        self._named_finger_cancel = threading.Event()
 
         motion_group = rclpy.callback_groups.MutuallyExclusiveCallbackGroup()
         gripper_group = rclpy.callback_groups.MutuallyExclusiveCallbackGroup()
@@ -133,7 +167,20 @@ class SimSpotManipulationDriverROS(Node):
         self.create_service(Trigger, "~/open_gripper", self._open_gripper_cb, callback_group=gripper_group)
         self.create_service(Trigger, "~/close_gripper", self._close_gripper_cb, callback_group=gripper_group)
         self.create_service(GripperAngleMove, "~/set_gripper_angle", self._gripper_angle_cb, callback_group=gripper_group)
-        self.create_service(InverseKinematics, "~/solve_ik", self._solve_ik_stub)
+
+        # solve_ik forwards to MoveIt's /spot_moveit/compute_ik (real IK) and
+        # repacks the answer into spot_msgs/srv/InverseKinematics. Its own group
+        # (reentrant) lets the handler block on the compute_ik client without
+        # stalling the motion group.
+        self.declare_parameter("ik_group_name", "arm")
+        self.declare_parameter("ik_service", "/spot_moveit/compute_ik")
+        self.declare_parameter("ik_avoid_collisions", True)
+        ik_group = rclpy.callback_groups.ReentrantCallbackGroup()
+        self._ik_client = self.create_client(
+            GetPositionIK, self.get_parameter("ik_service").value,
+            callback_group=ik_group)
+        self.create_service(
+            InverseKinematics, "~/solve_ik", self._solve_ik_cb, callback_group=ik_group)
 
         # --- Action servers ---
         action_ns = self.get_parameter("action_namespace").value
@@ -171,7 +218,8 @@ class SimSpotManipulationDriverROS(Node):
         )
         ActionServer(
             self, ArmCartesianCommand, "~/arm_cartesian_command",
-            self._arm_cartesian_stub, callback_group=motion_group,
+            self._arm_cartesian_cb, callback_group=motion_group,
+            cancel_callback=self._make_cancel_cb(self._arm_cartesian_cancel),
         )
 
         self.get_logger().info("Sim manipulation driver ready")
@@ -233,6 +281,11 @@ class SimSpotManipulationDriverROS(Node):
         joint_names: joints to command (subset of ALL_JOINTS)
         waypoints:   list of (positions, time_from_start_seconds), ascending
         Returns (success: bool, message: str).
+
+        Timing note: pacing (elapsed time, sleeps, settle deadline) uses the
+        WALL clock (time.monotonic/time.sleep) so the call always returns within
+        a bounded amount of real time regardless of Gazebo's real-time factor.
+        Only message stamps use the sim clock. See the module docstring.
         """
         unknown = [j for j in joint_names if j not in ALL_JOINTS]
         if unknown:
@@ -249,9 +302,9 @@ class SimSpotManipulationDriverROS(Node):
             waypoints = [(start_positions, 0.0)] + list(waypoints)
 
         total_time = waypoints[-1][1]
-        clock = self.get_clock()
-        t_start = clock.now()
-        period = Duration(seconds=1.0 / STREAM_RATE_HZ)
+        clock = self.get_clock()          # sim clock: used only for msg stamps
+        t_start = time.monotonic()        # wall clock: used for all pacing
+        period_s = 1.0 / STREAM_RATE_HZ
 
         n = len(joint_names)
         zero_vel = [0.0] * n
@@ -279,7 +332,7 @@ class SimSpotManipulationDriverROS(Node):
 
         def publish_setpoint(target, velocity=None):
             msg = JointTrajectory()
-            msg.header.stamp = clock.now().to_msg()
+            msg.header.stamp = clock.now().to_msg()   # sim-time stamp preserved
             msg.joint_names = list(joint_names)
             pt = JointTrajectoryPoint()
             pt.positions = target
@@ -297,7 +350,7 @@ class SimSpotManipulationDriverROS(Node):
                 if all(p is not None for p in held):
                     publish_setpoint(held, zero_vel)
                 return False, "Cancelled"
-            elapsed = (clock.now() - t_start).nanoseconds / 1e9
+            elapsed = time.monotonic() - t_start
             target, target_vel = interpolate(elapsed)
             # Command zero terminal velocity only once we've reached the end
             # of the path so the arm decelerates smoothly into the hold,
@@ -309,25 +362,53 @@ class SimSpotManipulationDriverROS(Node):
                 feedback_cb(joint_names, target, self._get_positions(joint_names))
             if elapsed >= total_time:
                 break
-            clock.sleep_for(period)
+            time.sleep(period_s)
 
         # Settle phase: keep re-asserting the final target until within tolerance
         final = list(waypoints[-1][0])
-        settle_deadline = clock.now() + Duration(seconds=SETTLE_TIMEOUT_S)
-        while clock.now() < settle_deadline:
+        settle_deadline = time.monotonic() + SETTLE_TIMEOUT_S
+        while time.monotonic() < settle_deadline:
             if cancel_event is not None and cancel_event.is_set():
                 return False, "Cancelled"
             actual = self._get_positions(joint_names)
             if all(abs(a - f) < GOAL_TOLERANCE_RAD for a, f in zip(actual, final)):
                 return True, "Trajectory complete"
             publish_setpoint(final)
-            clock.sleep_for(period)
+            time.sleep(period_s)
 
         errors = [round(abs(a - f), 3) for a, f in zip(self._get_positions(joint_names), final)]
         return False, f"Goal tolerance violated after settle timeout; per-joint |error| = {errors}"
 
-    def _move_to(self, joint_names, positions, duration_s=NAMED_POSE_DURATION_S):
-        return self._execute_trajectory(joint_names, [(positions, duration_s)])
+    def _perform_named_move(self, joint_names, positions, duration_s, lock, cancel):
+        """Run a named-pose / gripper move for a Trigger-style service.
+
+        Blocking mode (default): execute the (wall-clock-bounded) move inline and
+        return the real (success, message). Safe under the behavior tree's
+        wall-clock service timeout now that _execute_trajectory paces in real
+        time (<= duration_s + SETTLE_TIMEOUT_S seconds).
+
+        Immediate mode ('named_pose_return_immediately' == True): dispatch the
+        move on a background thread and return success right away. `lock`
+        serializes moves on the same channel and `cancel` preempts an in-flight
+        move on that channel, so a new request supersedes an old one instead of
+        piling up. The gz controller holds the streamed targets, so the arm
+        keeps moving after the service has already replied.
+        """
+        if not self.get_parameter("named_pose_return_immediately").value:
+            return self._execute_trajectory(joint_names, [(positions, duration_s)])
+
+        # Ask any in-flight move on this channel to stop, then launch a fresh one.
+        cancel.set()
+
+        def worker():
+            with lock:                 # serialize; wait for the prior move to exit
+                cancel.clear()
+                _, message = self._execute_trajectory(
+                    joint_names, [(positions, duration_s)], cancel_event=cancel)
+                self.get_logger().info(f"Named pose finished (async): {message}")
+
+        threading.Thread(target=worker, daemon=True).start()
+        return True, "Motion dispatched (sim: returning before completion)"
 
     # ------------------------------------------------------------------ #
     # Named-pose and gripper services
@@ -340,23 +421,33 @@ class SimSpotManipulationDriverROS(Node):
         return cb
 
     def _stow_cb(self, _, resp):
-        resp.success, resp.message = self._move_to(ARM_JOINT_ORDER, STOW_CONFIG)
+        resp.success, resp.message = self._perform_named_move(
+            ARM_JOINT_ORDER, STOW_CONFIG, NAMED_POSE_DURATION_S,
+            self._named_arm_lock, self._named_arm_cancel)
         return resp
 
     def _unstow_cb(self, _, resp):
-        resp.success, resp.message = self._move_to(ARM_JOINT_ORDER, UNSTOW_CONFIG)
+        resp.success, resp.message = self._perform_named_move(
+            ARM_JOINT_ORDER, UNSTOW_CONFIG, NAMED_POSE_DURATION_S,
+            self._named_arm_lock, self._named_arm_cancel)
         return resp
 
     def _mini_unstow_cb(self, _, resp):
-        resp.success, resp.message = self._move_to(ARM_JOINT_ORDER, MINI_UNSTOW_CONFIG)
+        resp.success, resp.message = self._perform_named_move(
+            ARM_JOINT_ORDER, MINI_UNSTOW_CONFIG, NAMED_POSE_DURATION_S,
+            self._named_arm_lock, self._named_arm_cancel)
         return resp
 
     def _open_gripper_cb(self, _, resp):
-        resp.success, resp.message = self._move_to([GRIPPER_JOINT], [GRIPPER_OPEN], 1.0)
+        resp.success, resp.message = self._perform_named_move(
+            [GRIPPER_JOINT], [GRIPPER_OPEN], 1.0,
+            self._named_finger_lock, self._named_finger_cancel)
         return resp
 
     def _close_gripper_cb(self, _, resp):
-        resp.success, resp.message = self._move_to([GRIPPER_JOINT], [GRIPPER_CLOSED], 1.0)
+        resp.success, resp.message = self._perform_named_move(
+            [GRIPPER_JOINT], [GRIPPER_CLOSED], 1.0,
+            self._named_finger_lock, self._named_finger_cancel)
         return resp
 
     def _gripper_angle_cb(self, req: GripperAngleMove.Request, resp: GripperAngleMove.Response):
@@ -365,7 +456,9 @@ class SimSpotManipulationDriverROS(Node):
             resp.message = "Could not set gripper angle to invalid angle"
             return resp
         target = req.gripper_angle / 90.0 * (GRIPPER_OPEN - GRIPPER_CLOSED) + GRIPPER_CLOSED
-        resp.success, resp.message = self._move_to([GRIPPER_JOINT], [target], 1.0)
+        resp.success, resp.message = self._perform_named_move(
+            [GRIPPER_JOINT], [target], 1.0,
+            self._named_finger_lock, self._named_finger_cancel)
         return resp
 
     # ------------------------------------------------------------------ #
@@ -451,10 +544,139 @@ class SimSpotManipulationDriverROS(Node):
     def _ap_ee_vel_cb(self, msg: TwistStamped):
         self._ee_vel_cb(msg.twist)
 
-    def _solve_ik_stub(self, req, resp: InverseKinematics.Response):
-        self.get_logger().warn("~/solve_ik not implemented in sim driver (needs IK layer)")
-        resp.solution_found = False
+    def _call_sync(self, client, request, timeout, what):
+        """Blocking service call that is safe under a MultiThreadedExecutor.
+
+        We never spin here (the executor spins in other threads); we wait on the
+        future via a done-callback + Event so another thread delivers the reply.
+        """
+        if not client.wait_for_service(timeout_sec=timeout):
+            self.get_logger().warn(f"{what}: service '{client.srv_name}' not available")
+            return None
+        done = threading.Event()
+        future = client.call_async(request)
+        future.add_done_callback(lambda _f: done.set())
+        if not done.wait(timeout):
+            self.get_logger().warn(f"{what}: timed out waiting for response")
+            return None
+        try:
+            return future.result()
+        except Exception as exc:
+            self.get_logger().warn(f"{what}: call raised {exc!r}")
+            return None
+
+    def _solve_ik_cb(self, req: InverseKinematics.Request, resp: InverseKinematics.Response):
+        """Forward to MoveIt /spot_moveit/compute_ik and repack the result.
+
+        Limitations vs. the real Boston Dynamics IK:
+          * body_pose is returned as identity -- the MoveIt 'arm' group is
+            fixed-base, so no whole-body redistribution is computed.
+          * gaze_target requests are not supported; we solve the 6-DoF pose IK
+            and warn. Wire a gaze constraint here if you need it later.
+        """
+        timeout = float(getattr(req, "timeout", 1.0)) if hasattr(req, "timeout") else 1.0
+        if timeout <= 0.0:
+            timeout = 1.0
+
+        if getattr(req, "use_gaze_target", False):
+            self.get_logger().warn(
+                "solve_ik: gaze_target not supported in sim adapter; solving pose IK only")
+
+        ik_req = GetPositionIK.Request()
+        ik_req.ik_request.group_name = self.get_parameter("ik_group_name").value
+        ik_req.ik_request.avoid_collisions = bool(
+            self.get_parameter("ik_avoid_collisions").value)
+        ik_req.ik_request.ik_link_name = req.tool_frame or "arm0_hand"
+        ik_req.ik_request.pose_stamped = req.target_pose
+
+        # Seed: use the provided nominal joints as a diff over the current state,
+        # so partial seeds are valid and an empty seed means "use current state".
+        ik_req.ik_request.robot_state.is_diff = True
+        if req.joint_names:
+            ik_req.ik_request.robot_state.joint_state.name = list(req.joint_names)
+            ik_req.ik_request.robot_state.joint_state.position = list(
+                req.joint_nominal_positions)
+
+        ik_req.ik_request.timeout = DurationMsg(
+            sec=int(timeout), nanosec=int((timeout % 1.0) * 1e9))
+
+        result = self._call_sync(self._ik_client, ik_req, timeout + 1.0, "compute_ik")
+        if result is None:
+            resp.solution_found = False
+            return resp
+
+        ok = (result.error_code.val == MoveItErrorCodes.SUCCESS)
+        resp.solution_found = bool(ok)
+        if not ok:
+            self.get_logger().warn(
+                f"solve_ik: MoveIt returned no solution (error_code={result.error_code.val})")
+            return resp
+
+        # Extract just the arm joints (in canonical order) for arm_joint_state.
+        sol = result.solution.joint_state
+        name_to_pos = dict(zip(sol.name, sol.position))
+        arm_state = JointState()
+        arm_state.header.stamp = self.get_clock().now().to_msg()
+        for j in ARM_JOINT_ORDER:
+            if j in name_to_pos:
+                arm_state.name.append(j)
+                arm_state.position.append(name_to_pos[j])
+        resp.arm_joint_state = arm_state
+
+        # Fixed-base group: body does not move, report identity.
+        resp.body_pose.orientation.w = 1.0
         return resp
+    
+    def _arm_cartesian_cb(self, goal_handle) -> ArmCartesianCommand.Result:
+        """Honor ArmCartesianCommand when the caller supplies joint_waypoints.
+
+        stable_arm_motion_server's populateKnownTrajectory() packs the already
+        solved JointTrajectory into goal.joint_waypoints alongside the Cartesian
+        poses (see ArmCartesianCommand.action:15-17), so for that path no IK is
+        needed here -- we track the joint solution MoveIt already produced, and
+        goal.waypoints/timestamps are advisory. Pose-only callers (e.g.
+        move_hand_to_pose.cpp) still need an IK layer and are rejected loudly
+        rather than silently approximated.
+        """
+        goal = goal_handle.request
+
+        if not goal.joint_waypoints.points:
+            goal_handle.abort()
+            return ArmCartesianCommand.Result(
+                success=False,
+                message="pose-only arm_cartesian_command not implemented in sim "
+                        "driver (needs IK layer)")
+
+        names, waypoints = self._goal_to_waypoints(goal.joint_waypoints, ARM_JOINT_ORDER)
+        if not names:
+            goal_handle.abort()
+            return ArmCartesianCommand.Result(
+                success=False,
+                message=f"No commandable arm joints in joint_waypoints "
+                        f"(expected from {ARM_JOINT_ORDER})")
+
+        def feedback(joint_names, desired, actual):
+            fb = ArmCartesianCommand.Feedback()
+            fb.status = ArmCartesianCommand.Feedback.STATUS_IN_PROGRESS
+            goal_handle.publish_feedback(fb)
+
+        self._arm_cartesian_cancel.clear()
+        success, message = self._execute_trajectory(
+            names, waypoints, self._arm_cartesian_cancel, feedback)
+
+        if self._arm_cartesian_cancel.is_set():
+            self._arm_cartesian_cancel.clear()
+            goal_handle.canceled()
+            return ArmCartesianCommand.Result(
+                success=False, message="Trajectory cancelled")
+
+        if success:
+            goal_handle.succeed()
+        else:
+            goal_handle.abort()
+
+        self.get_logger().info(f"ArmCartesianCommand finished: {message}")
+        return ArmCartesianCommand.Result(success=success, message=message)
 
     def _arm_cartesian_stub(self, goal_handle) -> ArmCartesianCommand.Result:
         goal_handle.abort()

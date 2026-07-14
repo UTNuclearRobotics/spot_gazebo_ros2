@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<!--
+  feet_sim.urdf.xacro
+
+  Sim-only end-effector frames consumed by CHAMP (see
+  champ_config/config/links/links.yaml). These do not exist in the hardware
+  description; the Boston Dynamics driver provides foot state through the SDK
+  instead.
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="champ_foot" params="prefix">
+    <link name="${prefix}_ee"/>
+    <joint name="${prefix}_foot" type="fixed">
+      <parent link="${prefix}_lower_leg"/>
+      <child link="${prefix}_ee"/>
+      <origin rpy="0 0 0" xyz="0 0 ${foot_offset_z}"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:champ_foot prefix="front_left"/>
+  <xacro:champ_foot prefix="front_right"/>
+  <xacro:champ_foot prefix="rear_left"/>
+  <xacro:champ_foot prefix="rear_right"/>
+
+</robot>

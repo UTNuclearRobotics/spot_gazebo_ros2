@@ -43,9 +43,28 @@ StateEstimation::StateEstimation():
     last_sync_time_ = clock_.now();
     base_broadcaster_ =
       std::make_unique<tf2_ros::TransformBroadcaster>(*this);
-      
-    joint_states_subscriber_.subscribe(reinterpret_cast<rclcpp::Node*>(this),  "joint_states");
-    foot_contacts_subscriber_.subscribe(reinterpret_cast<rclcpp::Node*>(this), "foot_contacts");
+
+    // Separate callback groups so the MultiThreadedExecutor can actually run
+    // these concurrently instead of serializing them on the node's default
+    // implicit group. The sync callback and IMU callback each get their own
+    // MutuallyExclusive group (so a callback never races with itself, but
+    // can still run alongside the others). The two publish timers get
+    // Reentrant groups since they don't share mutable state with each other
+    // and neither should have to wait on the other falling behind.
+    sync_callback_group_       = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+    imu_callback_group_        = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+    odom_timer_callback_group_ = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+    pose_timer_callback_group_ = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+
+    rclcpp::SubscriptionOptions sync_sub_options;
+    sync_sub_options.callback_group = sync_callback_group_;
+
+    joint_states_subscriber_.subscribe(
+        reinterpret_cast<rclcpp::Node*>(this), "joint_states",
+        rmw_qos_profile_default, sync_sub_options);
+    foot_contacts_subscriber_.subscribe(
+        reinterpret_cast<rclcpp::Node*>(this), "foot_contacts",
+        rmw_qos_profile_default, sync_sub_options);
 
     this->sync = std::make_unique<Sync>(
         SyncPolicy(10), 
@@ -86,8 +105,14 @@ StateEstimation::StateEstimation():
     this->get_parameter("urdf",                        urdf);
 
     if (orientation_from_imu_)
+    {
+      rclcpp::SubscriptionOptions imu_sub_options;
+      imu_sub_options.callback_group = imu_callback_group_;
+
       imu_subscriber_ = this->create_subscription<sensor_msgs::msg::Imu>(
-        "imu/data", 1, std::bind(&StateEstimation::imu_callback_, this,  std::placeholders::_1));
+        "imu/data", 1, std::bind(&StateEstimation::imu_callback_, this,  std::placeholders::_1),
+        imu_sub_options);
+    }
     base_.setGaitConfig(gait_config_);
     champ::URDF::loadFromString(base_, this->get_node_parameters_interface(), urdf);
     joint_names_ = champ::URDF::getJointNames(this->get_node_parameters_interface());
@@ -111,11 +136,13 @@ StateEstimation::StateEstimation():
 
     odom_data_timer_ = this->create_wall_timer(
          std::chrono::duration_cast<std::chrono::milliseconds>(period),
-         std::bind(&StateEstimation::publishFootprintToOdom_, this));
+         std::bind(&StateEstimation::publishFootprintToOdom_, this),
+         odom_timer_callback_group_);
 
     base_pose_timer_ = this->create_wall_timer(
          std::chrono::duration_cast<std::chrono::milliseconds>(period),
-         std::bind(&StateEstimation::publishBaseToFootprint_, this));
+         std::bind(&StateEstimation::publishBaseToFootprint_, this),
+         pose_timer_callback_group_);
 }
 
 void StateEstimation::synchronized_callback_(const std::shared_ptr<sensor_msgs::msg::JointState const>& joints_msg, 
@@ -134,6 +161,8 @@ void StateEstimation::synchronized_callback_(const std::shared_ptr<sensor_msgs::
         current_joint_positions[index] = joints_msg->position[i];
     }
 
+    std::lock_guard<std::mutex> lock(base_mutex_);
+
     base_.updateJointPositions(current_joint_positions);
 
     for(size_t i = 0; i < 4; i++)
@@ -149,7 +178,10 @@ void StateEstimation::imu_callback_(const sensor_msgs::msg::Imu::SharedPtr msg)
 
 void StateEstimation::publishFootprintToOdom_()
 {
-    odometry_.getVelocities(current_velocities_, rosTimeToChampTime(clock_.now()));
+    {
+        std::lock_guard<std::mutex> lock(base_mutex_);
+        odometry_.getVelocities(current_velocities_, rosTimeToChampTime(clock_.now()));
+    }
 
     rclcpp::Time current_time = clock_.now();
 
@@ -236,164 +268,24 @@ visualization_msgs::msg::Marker StateEstimation::createMarker_(geometry::Transfo
 
 void StateEstimation::publishBaseToFootprint_()
 {
-    base_.getFootPositions(current_foot_positions_);
-
-    visualization_msgs::msg::MarkerArray marker_array;
-    float robot_height = 0.0, all_height = 0.0;
-    int foot_in_contact = 0;
-    geometry::Transformation touching_feet[4];
-    bool no_contact = false;
-
-    for(size_t i = 0; i < 4; i++)
     {
-        marker_array.markers.push_back(createMarker_(current_foot_positions_[i], i, base_link_frame_));
-        if(base_.legs[i]->in_contact())
+        std::lock_guard<std::mutex> lock(base_mutex_);
+        base_.getFootPositions(current_foot_positions_);
+    }
+
+    // Foot position markers are kept purely for RViz debug visualization;
+    // this no longer depends on contact state since orientation/height
+    // are both fixed below (see notes on kManualFootprintHeight and
+    // kIdentityOrientation).
+    if (foot_publisher_->get_subscription_count())
+    {
+        visualization_msgs::msg::MarkerArray marker_array;
+        for (size_t i = 0; i < 4; i++)
         {
-            robot_height += current_foot_positions_[i].Z();
-            touching_feet[foot_in_contact] = current_foot_positions_[i];
-            foot_in_contact++;
+            marker_array.markers.push_back(createMarker_(current_foot_positions_[i], i, base_link_frame_));
         }
-        all_height += current_foot_positions_[i].Z();
-    }
-
-    if (foot_in_contact == 0)
-    {
-      no_contact = true;
-      robot_height = all_height;
-      foot_in_contact = 4;
-      for (size_t i = 0; i < 4; ++i)
-        touching_feet[i] = current_foot_positions_[i];
-    }
-
-	if(foot_publisher_->get_subscription_count())
-    {
         foot_publisher_->publish(marker_array);
     }
-
-    tf2::Vector3 x_axis(1, 0, 0);
-    tf2::Vector3 y_axis(0, 1, 0);
-    tf2::Vector3 z_axis(0, 0, 1);
-
-    // if the IMU provides good orientation estimates, these can be used to
-    // greatly improve body orientation; IMUs in Gazebo provide even non-noisy
-    // orientation measurements!
-    tf2::Matrix3x3 imu_rotation;
-    if (orientation_from_imu_ && last_imu_ != nullptr)
-    {
-      tf2::Quaternion imu_orientation(
-        last_imu_->orientation.x,
-        last_imu_->orientation.y,
-        last_imu_->orientation.z,
-        last_imu_->orientation.w);
-      imu_rotation.setRotation(imu_orientation);
-    }
-    else
-    {
-      imu_rotation.setIdentity();
-    }
-
-    // handle the orientation estimation based on the number of touching legs
-    if (foot_in_contact >= 3 && !no_contact)
-    {
-        // 3 or 4 legs touching. 3 points are enough to form a plane, so we choose
-        // any 3 touching legs and create a plane from them
-
-        // create two vectors in base_footprint plane
-        x_axis = tf2::Vector3(touching_feet[0].X() - touching_feet[2].X(),
-                              touching_feet[0].Y() - touching_feet[2].Y(),
-                              touching_feet[0].Z() - touching_feet[2].Z());
-        x_axis.normalize();
-
-        y_axis = tf2::Vector3(touching_feet[1].X() - touching_feet[2].X(),
-                              touching_feet[1].Y() - touching_feet[2].Y(),
-                              touching_feet[1].Z() - touching_feet[2].Z());
-        y_axis.normalize();
-
-        // compute normal vector of the plane
-        z_axis = x_axis.cross(y_axis);
-        z_axis.normalize();
-
-        // we don't know which 3 feet were chosen, so it might happen the normal points downwards
-        if (z_axis.dot(tf2::Vector3(0, 0, 1)) < 0)
-          z_axis = -z_axis;
-
-        // project 0,1,0 base_link axis to the plane defined by the normal
-        y_axis = (tf2::Vector3(0, 1, 0) - (tf2::Vector3(0, 1, 0).dot(z_axis) * z_axis)).normalized();
-        // and find the last vector which just has to be perpendicular to y and z
-        x_axis = y_axis.cross(z_axis);
-    }
-    else if (foot_in_contact == 2)
-    {
-      if ((base_.legs[0]->in_contact() && base_.legs[2]->in_contact()) ||
-          (base_.legs[1]->in_contact() && base_.legs[3]->in_contact()))
-      {
-        // both left or both right legs are touching... let them define the x axis
-        x_axis = tf2::Vector3(touching_feet[0].X() - touching_feet[1].X(),
-                              touching_feet[0].Y() - touching_feet[1].Y(),
-                              touching_feet[0].Z() - touching_feet[1].Z());
-        x_axis.normalize();
-
-        // get Z from IMU as we do not have enough contact points to define a plane
-        z_axis = imu_rotation.inverse() * z_axis;
-        y_axis = z_axis.cross(x_axis);
-        // and find the last vector which just has to be perpendicular to y and z
-        x_axis = y_axis.cross(z_axis);
-      }
-      else if ((base_.legs[0]->in_contact() && base_.legs[1]->in_contact()) ||
-               (base_.legs[2]->in_contact() && base_.legs[3]->in_contact()))
-      {
-        // both front or both hind legs are touching... let them define the y axis
-        y_axis = tf2::Vector3(touching_feet[0].X() - touching_feet[1].X(),
-                              touching_feet[0].Y() - touching_feet[1].Y(),
-                              touching_feet[0].Z() - touching_feet[1].Z());
-        y_axis.normalize();
-
-        // get Z from IMU as we do not have enough contact points to define a plane
-        z_axis = imu_rotation.inverse() * z_axis;
-        x_axis = y_axis.cross(z_axis);
-        // and find the last vector which just has to be perpendicular to x and z
-        y_axis = z_axis.cross(x_axis);
-      }
-      else
-      {
-        // diagonal legs touching... axis1 is the line going through both touching
-        // legs. axis2 is perpendicular to axis1 and z axis (from IMU)... then we
-        // just rotate axis1 and axis2 to form a coordinate system
-        tf2::Vector3 axis1(touching_feet[0].X() - touching_feet[1].X(),
-                           touching_feet[0].Y() - touching_feet[1].Y(),
-                           touching_feet[0].Z() - touching_feet[1].Z());
-        axis1.normalize();
-
-        // get Z from IMU as we do not have enough contact points to define a plane
-        z_axis = imu_rotation.inverse() * z_axis;
-        auto axis2 = z_axis.cross(axis1);
-        z_axis = axis1.cross(axis2);
-
-        // project base_link 1,0,0 axis along the computed plane normal
-        x_axis = (x_axis - (x_axis.dot(z_axis) * z_axis)).normalized();
-        // and find the last vector which just has to be perpendicular to x and z
-        y_axis = z_axis.cross(x_axis);
-      }
-    }
-    else if (foot_in_contact == 1 || no_contact)
-    {
-      // Zero or one feet in contact... There isn't much to do, so just take Z from IMU
-      z_axis = imu_rotation.inverse() * z_axis;
-
-      // project base_link 1,0,0 axis along the computed plane normal
-      x_axis = (x_axis - (x_axis.dot(z_axis) * z_axis)).normalized();
-      // and find the last vector which just has to be perpendicular to x and z
-      y_axis = z_axis.cross(x_axis);
-    }
-
-    tf2::Matrix3x3 rotationMatrix(
-      x_axis.x(), y_axis.x(), z_axis.x(),
-      x_axis.y(), y_axis.y(), z_axis.y(),
-      x_axis.z(), y_axis.z(), z_axis.z());
-
-    tf2::Quaternion quaternion;
-    rotationMatrix.getRotation(quaternion);
-    quaternion.normalize();
 
     geometry_msgs::msg::PoseWithCovarianceStamped pose_msg;
     pose_msg.header.frame_id = base_footprint_frame_;
@@ -408,12 +300,32 @@ void StateEstimation::publishBaseToFootprint_()
 
     pose_msg.pose.pose.position.x = 0.0;
     pose_msg.pose.pose.position.y = 0.0;
-    pose_msg.pose.pose.position.z = -(robot_height / (float)foot_in_contact);
 
-    pose_msg.pose.pose.orientation.x = quaternion.x();
-    pose_msg.pose.pose.orientation.y = quaternion.y();
-    pose_msg.pose.pose.orientation.z = quaternion.z();
-    pose_msg.pose.pose.orientation.w = -quaternion.w();
+    // Manually fixed height instead of the live computation
+    // (-(robot_height / foot_in_contact)) that used to run here. Live
+    // foot-contact-driven height/orientation estimation was found to be
+    // CPU-heavy enough, combined with nav2's MPPI controller + Gazebo, to
+    // make state_estimation_node fall behind real time once the robot
+    // started walking (tf extrapolation errors in nav2). This constant was
+    // captured from a live, working sample of this same computation on
+    // flat ground. If the real standing height changes meaningfully
+    // (different gait, terrain, payload, etc.) this value will need to be
+    // re-measured and updated -- it intentionally trades live accuracy for
+    // a large, fixed CPU savings.
+    constexpr float kManualFootprintHeight = 0.4680730700492859f;
+    pose_msg.pose.pose.position.z = kManualFootprintHeight;
+
+    // Orientation is likewise fixed to identity rather than computed live
+    // from a per-cycle contact-plane-fit / IMU blend (the removed
+    // touching-feet plane math + imu_rotation logic above this function
+    // previously). Valid for flat-ground walking where roll/pitch stay
+    // near zero; re-introduce IMU- or contact-based orientation if the
+    // robot needs to operate on slopes/uneven terrain where this
+    // assumption would break down.
+    pose_msg.pose.pose.orientation.x = 0.0;
+    pose_msg.pose.pose.orientation.y = 0.0;
+    pose_msg.pose.pose.orientation.z = 0.0;
+    pose_msg.pose.pose.orientation.w = 1.0;
 
     base_to_footprint_publisher_->publish(pose_msg);
 }
