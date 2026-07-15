@@ -1,0 +1,394 @@
+<?xml version="1.0" ?>
+<!--
+  rfid_bench.sdf
+
+  Simulator twin of the physical characterization bench: a static reader
+  fixture and a tag field at precisely known geometry. No robot, no nav
+  stack. Validates the model-fitting pipeline while theta is known exactly,
+  and sizes the dwell the physical tests will need.
+  See rfid_inventory_tracking/doc/characterization_protocol.md.
+
+  GEOMETRY
+  ========
+  The antenna sits at world (0, 0, 1.0), boresight +X. Every tag pose below
+  is therefore ALSO its antenna-frame coordinate, less the 1.0 m in z.
+  Ground truth is extracted from this file by gen_bench_manifest.py, never
+  maintained by hand: a manifest that silently disagrees with the world
+  corrupts every fit and nothing looks wrong.
+
+  Tag groups (fits are grouped by name):
+
+    rfid_tag_lad_*   Range ladder on boresight, 2 to 40 cm, geometric
+                     spacing. Test A. Tags nearer than ~5 cm are pinned at
+                     pd_max and carry NO information about r0; they confirm
+                     the ceiling, not fit it.
+
+    rfid_tag_haz_*   Azimuth arc at r = 0.12 m. Test D.
+    rfid_tag_vel_*   Elevation arc at r = 0.12 m. Test D. Seven tags each at
+                     IDENTICAL radii and angles (0, +/-20, +/-40, +/-60), so
+                     that a fitted H != V means the antenna is asymmetric
+                     rather than that the arcs were sampled differently.
+
+    rfid_tag_clu_*   Eight tags CO-LOCATED at (0.09, 0, 1.0). Test C. Any
+                     spread in their mean RSSI is purely tag_offset_stddev.
+                     Overlapping static models never interact: no collision,
+                     no physics, and the plugin samples each independently.
+
+  RUN IT TWICE
+  ============
+  <tag_offset_stddev> below is 0.0. That is deliberate:
+
+    Run 1 (offset = 0.0):  fit r0, rssi_r0, exponent, beamwidths. Physical
+        Test A uses ONE tag, whose offset is absorbed into rssi_r0; giving
+        the ladder's 12 tags 12 offsets would contaminate the fit in a way
+        the real bench cannot. The cluster must recover sigma_off = 0 here,
+        which is the null test.
+
+    Run 2 (offset = 2.0):  fit sigma_off from the cluster. Ignore the ladder
+        and arc fits from this run.
+
+  NOT TESTED HERE: occlusion (no occluders, the direct path is always clear)
+  and multipath (not modeled anywhere). Expect the physical Test B
+  repeatability to be worse than anything this world produces, and treat the
+  sim's sigma_rssi as a lower bound.
+-->
+<sdf version="1.6">
+  <world name="rfid_bench">
+
+    <physics name="1ms" type="ignored">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+
+    <plugin filename="ignition-gazebo-physics-system"
+            name="ignition::gazebo::systems::Physics"/>
+    <plugin filename="ignition-gazebo-user-commands-system"
+            name="ignition::gazebo::systems::UserCommands"/>
+    <plugin filename="ignition-gazebo-scene-broadcaster-system"
+            name="ignition::gazebo::systems::SceneBroadcaster"/>
+
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><plane><normal>0 0 1</normal><size>10 10</size></plane></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><plane><normal>0 0 1</normal><size>10 10</size></plane></geometry>
+          <material>
+            <ambient>0.3 0.3 0.3 1</ambient>
+            <diffuse>0.4 0.4 0.4 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ===================== READER FIXTURE =====================
+         The antenna frame coincides with the 'mount' link origin at world
+         (0, 0, 1.0), boresight +X.
+
+         read_assembler needs map to rfid_antenna_bench, but the plugin only
+         publishes mount to rfid_antenna_bench; the launch file supplies the
+         static map to mount transform, standing in for the nav stack. -->
+    <model name="bench_fixture">
+      <static>true</static>
+      <pose>0 0 1.0 0 0 0</pose>
+      <link name="mount">
+        <visual name="visual">
+          <!-- Iron is 72 x 72 x 23 mm, drawn to scale. The antenna is
+               modeled as a point at the link origin; Test F corrects for
+               that simplification. -->
+          <geometry><box><size>0.023 0.072 0.072</size></box></geometry>
+          <material>
+            <ambient>0.1 0.1 0.1 1</ambient>
+            <diffuse>0.15 0.15 0.15 1</diffuse>
+          </material>
+        </visual>
+      </link>
+
+      <plugin filename="RfidReader" name="rfid::RfidReader">
+        <reader_id>vulcan_iron_bench</reader_id>
+        <tag_prefix>rfid_tag_</tag_prefix>
+        <update_rate>10</update_rate>
+        <multiplex>true</multiplex>
+        <max_range>0.6</max_range>     <!-- compute guard; past the ladder -->
+        <pd_max>0.99</pd_max>
+        <topic>/rfid/reads</topic>
+        <seed>42</seed>
+
+        <publish_tf>true</publish_tf>
+        <tf_topic>/rfid/tf</tf_topic>
+        <tf_position_noise_stddev>0.0</tf_position_noise_stddev>
+
+        <power_topic>/rfid/set_power</power_topic>
+        <p_ref>27.0</p_ref>
+        <p_min>0.0</p_min>
+        <p_max>27.0</p_max>
+        <power_step>0.5</power_step>
+
+        <!-- ===== THE VALUES THE FITTER MUST RECOVER =====
+             The ANSWER KEY: fit_reader_model.py takes these on its "truth"
+             argument and reports recovery error. tag_offset_stddev is 0.0
+             for the geometry runs; set 2.0 and re-run for Test C. See the
+             header. -->
+        <rssi_noise_stddev>1.5</rssi_noise_stddev>
+        <tag_offset_stddev>0.0</tag_offset_stddev>
+
+        <!-- Harmless here (the bench knows its tag population), but kept
+             false so the record path matches the mission one. -->
+        <report_n_tags>false</report_n_tags>
+
+        <antenna>
+          <name>bench</name>            <!-- TF frame: rfid_antenna_bench -->
+          <link>mount</link>
+          <pose>0 0 0 0 0 0</pose>
+          <r0>0.11</r0>
+          <delta_theta_h>80</delta_theta_h>
+          <delta_theta_v>80</delta_theta_v>
+          <rssi_r0>-45.0</rssi_r0>
+          <power_dbm>27.0</power_dbm>
+        </antenna>
+      </plugin>
+    </model>
+
+    <!-- ===================== RANGE LADDER (Test A) =====================
+         Boresight, theta = 0. Geometric spacing so the PD transition is
+         sampled at every power in the sweep. -->
+
+    <model name="rfid_tag_lad_020"><static>true</static><pose>0.020 0 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.03 0.01</size></box></geometry>
+        <material><ambient>0.9 0.2 0.2 1</ambient><diffuse>0.9 0.2 0.2 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_lad_030"><static>true</static><pose>0.030 0 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.03 0.01</size></box></geometry>
+        <material><ambient>0.9 0.2 0.2 1</ambient><diffuse>0.9 0.2 0.2 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_lad_045"><static>true</static><pose>0.045 0 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.03 0.01</size></box></geometry>
+        <material><ambient>0.9 0.2 0.2 1</ambient><diffuse>0.9 0.2 0.2 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_lad_060"><static>true</static><pose>0.060 0 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.03 0.01</size></box></geometry>
+        <material><ambient>0.9 0.2 0.2 1</ambient><diffuse>0.9 0.2 0.2 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_lad_080"><static>true</static><pose>0.080 0 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.03 0.01</size></box></geometry>
+        <material><ambient>0.9 0.2 0.2 1</ambient><diffuse>0.9 0.2 0.2 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_lad_100"><static>true</static><pose>0.100 0 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.03 0.01</size></box></geometry>
+        <material><ambient>0.9 0.2 0.2 1</ambient><diffuse>0.9 0.2 0.2 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_lad_130"><static>true</static><pose>0.130 0 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.03 0.01</size></box></geometry>
+        <material><ambient>0.9 0.2 0.2 1</ambient><diffuse>0.9 0.2 0.2 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_lad_160"><static>true</static><pose>0.160 0 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.03 0.01</size></box></geometry>
+        <material><ambient>0.9 0.2 0.2 1</ambient><diffuse>0.9 0.2 0.2 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_lad_200"><static>true</static><pose>0.200 0 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.03 0.01</size></box></geometry>
+        <material><ambient>0.9 0.2 0.2 1</ambient><diffuse>0.9 0.2 0.2 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_lad_250"><static>true</static><pose>0.250 0 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.03 0.01</size></box></geometry>
+        <material><ambient>0.9 0.2 0.2 1</ambient><diffuse>0.9 0.2 0.2 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_lad_310"><static>true</static><pose>0.310 0 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.03 0.01</size></box></geometry>
+        <material><ambient>0.9 0.2 0.2 1</ambient><diffuse>0.9 0.2 0.2 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_lad_400"><static>true</static><pose>0.400 0 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.03 0.01</size></box></geometry>
+        <material><ambient>0.9 0.2 0.2 1</ambient><diffuse>0.9 0.2 0.2 1</diffuse></material>
+      </visual></link></model>
+
+    <!-- ===================== AZIMUTH ARC (Test D) =====================
+         r = 0.12 m, theta_V = 0. Positions are r*(cos t, sin t, 0).     -->
+
+    <model name="rfid_tag_haz_000"><static>true</static><pose>0.120000 0.000000 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.03 0.01</size></box></geometry>
+        <material><ambient>0.2 0.6 0.9 1</ambient><diffuse>0.2 0.6 0.9 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_haz_p20"><static>true</static><pose>0.112763 0.041042 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.03 0.01</size></box></geometry>
+        <material><ambient>0.2 0.6 0.9 1</ambient><diffuse>0.2 0.6 0.9 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_haz_n20"><static>true</static><pose>0.112763 -0.041042 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.03 0.01</size></box></geometry>
+        <material><ambient>0.2 0.6 0.9 1</ambient><diffuse>0.2 0.6 0.9 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_haz_p40"><static>true</static><pose>0.091925 0.077135 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.03 0.01</size></box></geometry>
+        <material><ambient>0.2 0.6 0.9 1</ambient><diffuse>0.2 0.6 0.9 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_haz_n40"><static>true</static><pose>0.091925 -0.077135 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.03 0.01</size></box></geometry>
+        <material><ambient>0.2 0.6 0.9 1</ambient><diffuse>0.2 0.6 0.9 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_haz_p60"><static>true</static><pose>0.060000 0.103923 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.03 0.01</size></box></geometry>
+        <material><ambient>0.2 0.6 0.9 1</ambient><diffuse>0.2 0.6 0.9 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_haz_n60"><static>true</static><pose>0.060000 -0.103923 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.03 0.01</size></box></geometry>
+        <material><ambient>0.2 0.6 0.9 1</ambient><diffuse>0.2 0.6 0.9 1</diffuse></material>
+      </visual></link></model>
+
+    <!-- ===================== ELEVATION ARC (Test D) =====================
+         r = 0.12 m, theta_H = 0. Positions are r*(cos t, 0, sin t), z
+         offset by the fixture height.
+
+         GEOMETRICALLY IDENTICAL TO THE AZIMUTH ARC on purpose: same radius,
+         same seven angles. Sample the two arcs differently and a fitted
+         H != V tells you about tag placement, not about the antenna.
+
+         vel_000 is co-located with haz_000 deliberately: the arcs share an
+         origin physically, but fits are grouped by name, so the elevation
+         fit needs its own tag there. Overlapping static models never
+         interact. -->
+
+    <model name="rfid_tag_vel_000"><static>true</static><pose>0.120000 0 1.000000 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.006 0.01</size></box></geometry>
+        <material><ambient>0.3 0.8 0.3 1</ambient><diffuse>0.3 0.8 0.3 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_vel_p20"><static>true</static><pose>0.112763 0 1.041042 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.03 0.01</size></box></geometry>
+        <material><ambient>0.3 0.8 0.3 1</ambient><diffuse>0.3 0.8 0.3 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_vel_n20"><static>true</static><pose>0.112763 0 0.958958 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.03 0.01</size></box></geometry>
+        <material><ambient>0.3 0.8 0.3 1</ambient><diffuse>0.3 0.8 0.3 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_vel_p40"><static>true</static><pose>0.091925 0 1.077135 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.03 0.01</size></box></geometry>
+        <material><ambient>0.3 0.8 0.3 1</ambient><diffuse>0.3 0.8 0.3 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_vel_n40"><static>true</static><pose>0.091925 0 0.922865 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.03 0.01</size></box></geometry>
+        <material><ambient>0.3 0.8 0.3 1</ambient><diffuse>0.3 0.8 0.3 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_vel_p60"><static>true</static><pose>0.060000 0 1.103923 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.03 0.01</size></box></geometry>
+        <material><ambient>0.3 0.8 0.3 1</ambient><diffuse>0.3 0.8 0.3 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_vel_n60"><static>true</static><pose>0.060000 0 0.896077 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.03 0.01</size></box></geometry>
+        <material><ambient>0.3 0.8 0.3 1</ambient><diffuse>0.3 0.8 0.3 1</diffuse></material>
+      </visual></link></model>
+
+    <!-- ===================== TAG CLUSTER (Test C) =====================
+         Eight tags at IDENTICAL geometry, (0.09, 0, 1.0), where PD is ~0.75
+         per interrogation so RSSI is well sampled. Any spread in their
+         per-tag mean RSSI is tag_offset_stddev and nothing else. With
+         <tag_offset_stddev>0.0</tag_offset_stddev> the fitter must recover
+         sigma_off = 0: the null test. -->
+
+    <model name="rfid_tag_clu_00"><static>true</static><pose>0.090 0 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.006 0.01</size></box></geometry>
+        <material><ambient>0.9 0.7 0.1 1</ambient><diffuse>0.9 0.7 0.1 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_clu_01"><static>true</static><pose>0.090 0 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.006 0.01</size></box></geometry>
+        <material><ambient>0.9 0.7 0.1 1</ambient><diffuse>0.9 0.7 0.1 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_clu_02"><static>true</static><pose>0.090 0 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.006 0.01</size></box></geometry>
+        <material><ambient>0.9 0.7 0.1 1</ambient><diffuse>0.9 0.7 0.1 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_clu_03"><static>true</static><pose>0.090 0 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.006 0.01</size></box></geometry>
+        <material><ambient>0.9 0.7 0.1 1</ambient><diffuse>0.9 0.7 0.1 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_clu_04"><static>true</static><pose>0.090 0 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.006 0.01</size></box></geometry>
+        <material><ambient>0.9 0.7 0.1 1</ambient><diffuse>0.9 0.7 0.1 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_clu_05"><static>true</static><pose>0.090 0 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.006 0.01</size></box></geometry>
+        <material><ambient>0.9 0.7 0.1 1</ambient><diffuse>0.9 0.7 0.1 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_clu_06"><static>true</static><pose>0.090 0 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.006 0.01</size></box></geometry>
+        <material><ambient>0.9 0.7 0.1 1</ambient><diffuse>0.9 0.7 0.1 1</diffuse></material>
+      </visual></link></model>
+
+    <model name="rfid_tag_clu_07"><static>true</static><pose>0.090 0 1.0 0 0 0</pose>
+      <link name="tag_link"><visual name="visual">
+        <geometry><box><size>0.004 0.006 0.01</size></box></geometry>
+        <material><ambient>0.9 0.7 0.1 1</ambient><diffuse>0.9 0.7 0.1 1</diffuse></material>
+      </visual></link></model>
+
+  </world>
+</sdf>

@@ -1,0 +1,33 @@
+---
+# Bridge config for the RFID characterization bench (worlds/rfid_bench.sdf).
+# Deliberately minimal: the bench has no robot, lidar, cameras or joint
+# states, only the clock and the three RFID topics.
+
+- ros_topic_name: "/clock"
+  gz_topic_name: "/clock"
+  ros_type_name: "rosgraph_msgs/msg/Clock"
+  gz_type_name: "ignition.msgs.Clock"
+  direction: GZ_TO_ROS
+
+# RFID
+- ros_topic_name: "/rfid/reads"
+  gz_topic_name: "/rfid/reads"
+  ros_type_name: "std_msgs/msg/String"
+  gz_type_name: "ignition.msgs.StringMsg"
+  direction: GZ_TO_ROS
+
+# mount -> rfid_antenna_bench. The map -> mount half comes from a static
+# transform publisher in the launch file, standing in for a nav stack.
+- ros_topic_name: "/tf"
+  gz_topic_name: "/rfid/tf"
+  ros_type_name: "tf2_msgs/msg/TFMessage"
+  gz_type_name: "ignition.msgs.Pose_V"
+  direction: GZ_TO_ROS
+
+# TX power command. bench_sweep.py drives this and gates on the echoed
+# power coming back in the read reports.
+- ros_topic_name: "/rfid/set_power"
+  gz_topic_name: "/rfid/set_power"
+  ros_type_name: "std_msgs/msg/String"
+  gz_type_name: "ignition.msgs.StringMsg"
+  direction: ROS_TO_GZ

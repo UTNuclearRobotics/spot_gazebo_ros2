@@ -16,27 +16,13 @@
     U23-U24  patch_panel_4
     U26-U29  fiber_patch_panel   (4RU fiber patch panel)
 
-  RFID design notes:
-  - Each piece of equipment has a dedicated tag model named rfid_tag_<equipment>.
-    Tags are small green boxes on the front faceplate (front of rack = -Y),
-    following the "tags as very small boxes" convention from Alajami et al.
-    (RFID-TA 2022).
-  - Tag models are VISUAL-ONLY (no <collision>) so lidar / depth sensors and
-    costmaps are not affected by 4 mm protrusions.
-  - There is no native RFID sensor in gz-sim. Three ways to read these tags:
-      (a) RFComms + CommsEndpoint (enabled below): each tag is a comms
-          endpoint with a unique EPC-style address. Attach a CommsEndpoint
-          to the reader/antenna model on the robot and ping each address;
-          the world-level RFComms system applies log-distance path loss to
-          decide packet delivery. Tune <range_config> to approximate the
-          reader's read envelope. Omnidirectional (no beamwidth term).
-      (b) Custom gz-sim system plugin implementing the probability-of-
-          detection model from the paper: enumerate entities whose scoped
-          name starts with "rfid_tag_", compute (R, thetaH, thetaV) from
-          the antenna link pose vs. tag pose, PD(R0, dThetaH, dThetaV),
-          Bernoulli-sample per read cycle, publish EPC list.
-      (c) logical_camera sensor on the antenna link (deterministic frustum
-          membership) + PD post-processing in a ROS 2 node via TF.
+  Tags: one model per item, named rfid_tag_<equipment>, on the front faceplate
+  (front of rack = -Y). VISUAL-ONLY (no <collision>) so lidar / depth sensors
+  and costmaps are not affected by the 4 mm protrusions.
+
+  gz-sim has no native RFID sensor. Two read paths exist here: the RFComms +
+  CommsEndpoint plugins (world plugin below, one endpoint per tag), and the
+  RfidReader plugin on the robot model.
 -->
 <sdf version="1.9">
   <world name="server_rack_rfid">
@@ -67,11 +53,9 @@
         name="ignition::gazebo::systems::UserCommands">
     </plugin>
 
-    <!-- RF propagation model used by the CommsEndpoint plugins on each tag.
-         Log-distance path loss (ported from SubT). Values below are a
-         starting point for a UHF RFID-like read envelope (~2-6 m usable):
-         calibrate max_range / fading_exponent / sigma against your reader
-         (e.g. the R0 = "distance at which 50% of tags read" from the paper). -->
+    <!-- Log-distance path loss for the CommsEndpoint tags. UNCALIBRATED
+         placeholders for a ~2-6 m read envelope; omnidirectional, no
+         beamwidth term. -->
     <plugin
         filename="ignition-gazebo-rf-comms-system"
         name="ignition::gazebo::systems::RFComms">
@@ -90,7 +74,6 @@
     </plugin>
 
     <gui fullscreen="0">
-      <!-- 3D scene -->
       <plugin filename="MinimalScene" name="3D View">
         <ignition-gui>
           <title>3D View</title>
@@ -212,7 +195,6 @@
        <temperature_gradient>0.2</temperature_gradient>
     </atmosphere>
 
-    <!-- Global directional light -->
     <light type="directional" name="sun">
       <pose>0 0 10 0 0 0</pose>
       <diffuse>0.8 0.8 0.8 1</diffuse>
@@ -352,7 +334,6 @@
       </link>
     </model>
 
-    <!-- Ground plane -->
     <model name="ground_plane">
       <static>true</static>
       <link name="link">
@@ -380,83 +361,137 @@
       </link>
     </model>
 
-    <!-- Uncomment to drop Spot in front of the rack (front of rack = -Y) -->
     <model name="spot">
         <pose>0 0.0 0.7 0 0 0</pose>
         <include merge="true">
             <uri>package://spot_description_sim/models/spot</uri>
         </include>
 
-        <!-- Multi-port RFID reader (custom_gazebo_plugins/RfidReader.cc),
-             modeled on the paper's AdvanReader-160: one reader, N antenna
-             ports, time-division multiplexed. Port 'body_front' is fixed
-             to the chassis; port 'hand' rides the arm end effector and
-             tracks the kinematic chain automatically (point the arm at a
-             rack unit for close-range verification reads).
-             Boresight = +X of each antenna's <pose> frame on its <link>.
-             The single-antenna RfidPdReader plugin remains available;
-             don't run both at once or you'll double-read. -->
+
+         <!-- Vulcan RFID Iron USB reader: a sealed reader with ONE integrated
+          antenna. A second Iron would be an independent USB device needing its
+          own <plugin> block and topic, not a second <antenna> here (multiplex
+          models the ports of one shared reader).
+
+          r0 = 0.11 m at 27 dBm, derived from the datasheet's 12 in maximum read
+          distance assuming a dwell of N = 10 interrogations. The datasheet does
+          not state a read distance, so the number is only as good as that
+          assumption.
+
+          NEAR-FIELD FLOOR: r0(P) = 0.11 * 10^((P-27)/20). Below roughly 15 dBm
+          r0 falls inside the near field (far-field boundary ~1.4 to 3.2 cm at
+          915 MHz), where the 1/R^2 and 1/R^4 exponents this model is built on
+          stop holding. The usable sweep is about 15 to 27 dBm, NOT the
+          datasheet's full 0 to 27: an estimator swept below ~15 dBm is fitting
+          a model that no longer describes the physics.
+        -->
+        
         <plugin filename="RfidReader" name="rfid::RfidReader">
-          <reader_id>advanreader_160</reader_id>
+          <reader_id>vulcan_iron</reader_id>
           <tag_prefix>rfid_tag_</tag_prefix>
-          <update_rate>10</update_rate>   <!-- port interrogation cycles [Hz] -->
-          <multiplex>true</multiplex>     <!-- round-robin ports, like real HW -->
-          <max_range>10.0</max_range>
+          <update_rate>10</update_rate>   <!-- interrogation cycles [Hz] -->
+          <multiplex>true</multiplex>     <!-- moot with a single antenna -->
+          <max_range>0.5</max_range>      <!-- COMPUTE GUARD, not the range spec -->
           <pd_max>0.99</pd_max>
           <topic>/rfid/reads</topic>
-          <seed>42</seed>                 <!-- remove for nondeterministic runs -->
-
-          <!-- Passive-tag TF: detected tags only, parented to the antenna
-               that read them. Bridge /rfid/tf (Pose_V) to tf2_msgs/TFMessage,
-               remap to /tf — see custom_gazebo_plugins/README.md -->
+          <seed>42</seed>                 <!-- remove for nondeterministic runs;
+                                              the drawn seed is logged either way -->
+        
+          <!-- Passive-tag TF, detected tags only. GROUND TRUTH: a real reader
+              returns EPC + RSSI, never range or bearing. These frames and the
+              report's "r" field are for validation only; an estimator meant for
+              hardware consumes the read report alone. -->
           <publish_tf>true</publish_tf>
           <tf_topic>/rfid/tf</tf_topic>
-          <rssi_r0>-60.0</rssi_r0>        <!-- dBm at r0 boresight (default) -->
           <tf_position_noise_stddev>0.0</tf_position_noise_stddev>
+        
+          <!-- ===== TX power [dBm] =====
+              r0/rssi_r0 are characterized at p_ref. Commanding P shifts the link:
+                  r0_eff = r0 * 10^((P-p_ref)/20)     (forward link, 1/R^2)
+                  RSSI  += (P - p_ref)                (backscatter, 1/R^4)
+              See the near-field floor note above before sweeping below ~15 dBm. -->
+          <power_topic>/rfid/set_power</power_topic>
+          <p_ref>27.0</p_ref>
+          <p_min>0.0</p_min>
+          <p_max>27.0</p_max>
+          <power_step>0.5</power_step>
+        
+          <!-- ===== Stochastic link — TODO(characterization) =====
+              PLACEHOLDERS [dB], to be measured on the bench, not inferred from
+              the sim: rssi_noise_stddev from Test B, tag_offset_stddev from
+              Test C (characterization_protocol.md). 1.5 dB is a free-space
+              guess; a metal aisle is materially worse.
+              Set both to 0.0 for a deterministic link. -->
+          <rssi_noise_stddev>1.5</rssi_noise_stddev>
+          <tag_offset_stddev>2.0</tag_offset_stddev>
+        
+          <!-- Ground-truth leak: reports the true tag count, which inventory
+              exists to discover. Flip to false once the estimator scores
+              non-detections against its own asset manifest. -->
+          <report_n_tags>true</report_n_tags>
+        
+          <!-- ===== Occlusion — TODO(characterization) =====
+              Attenuation volumes in dB, not binary line of sight: at lambda
+              ~33 cm a metal rack diffracts and leaks instead of casting a hard
+              shadow. Each volume charges the direct antenna to tag segment
+              <attenuation_db> for entering plus <attenuation_db_per_m> times the
+              chord. Applied ONCE to the forward link and TWICE to RSSI.
+              Values are PLACEHOLDERS; Test E measures them.
 
-          <!-- Port 1: chassis coverage antenna (SP11-class) -->
-          <antenna>
-            <name>body_front</name>       <!-- TF frame: rfid_antenna_body_front -->
-            <link>body</link>
-            <pose>0.4 0 0.05 0 0 0</pose>
-            <r0>2.5</r0>
-            <delta_theta_h>65</delta_theta_h>
-            <delta_theta_v>65</delta_theta_v>
-          </antenna>
+              KNOWN GAP: this models blocking, not leakage. Nothing here creates
+              a read along a path that does not exist, so the sim stays
+              optimistic about false localization. Closing that needs a
+              reflection model, not a bigger dB.
 
-          <!-- Port 2: end-effector antenna. Short-range, wide beam:
-               close-in verification reads of individual rack units.
-               Mounted on the last PHYSICAL arm link (<name>_wrist_roll from
-               spot_arm_urdf.xacro). The virtual frames (<name>_hand,
-               <name>_tool0, at 0.19557 0 0 from wrist_roll) are fixed-joint
-               children and get LUMPED into wrist_roll during URDF->SDF
-               conversion, so they don't exist as links in the ECM — the
-               hand-frame offset is baked into <pose> instead. Adjust the
-               'arm' prefix to match your spot_arm macro instantiation name;
-               if wrong, the console warning now lists the model's actual
-               links. -->
+              Geometry: rack model sits at world (0, 4.0, 0), front face (where
+              tags live) at local y = -0.50, i.e. world y = 3.5. The body volume
+              below starts at y = 3.52, inset 2 cm so a ray to a tag ON the front
+              face grazes rather than clips it. Do not "clean up" that inset. -->
+          <occluder>
+            <name>rack_body</name>
+            <model>server_rack</model>       <!-- rides the rack's pose -->
+            <pose>0 0.035 1.015 0 0 0</pose> <!-- rack frame: front face at y=-0.50 -->
+            <size>0.60 1.03 2.03</size>
+            <attenuation_db>3.0</attenuation_db>          <!-- entry/exit coupling -->
+            <attenuation_db_per_m>30.0</attenuation_db_per_m>  <!-- packed metal -->
+          </occluder>
+        
+          <!-- ===== Antenna: the Iron, on the arm end effector =====
+              <link> must name an ECM link, i.e. an SDF name. arm0_hand is real here
+              (model.sdf.xacro:1087) and matches the URDF frame name, so the default
+              <parent_frame> lands connected in the ROS tree. Do NOT use
+              arm0_wrist_roll_link: ROS publishes arm0_wrist_roll, so the antenna TF
+              would parent to a frame nobody publishes. A wrong <link> does not fail
+              loudly, it warns once and then never interrogates, and the empty reads
+              look exactly like an empty rack.
+
+              TODO(mount): <pose> is a placeholder, coincident with the hand frame,
+              pending mount CAD. Must stay equal to the offset in
+              rfid_inventory_tracking/urdf/rfid_antenna.xacro.
+              TODO(characterization): r0 / rssi_r0 / beamwidth are guesses, Tests A
+              and D. -->
           <antenna>
-            <name>hand</name>             <!-- TF frame: rfid_antenna_hand -->
-            <link>arm_wrist_roll</link>
-            <pose>0.19557 0 0 0 0 0</pose>  <!-- = the URDF hand/tool0 frame -->
-            <r0>1.0</r0>
+            <name>hand</name>              <!-- TF frame: rfid_antenna_hand -->
+            <link>arm0_hand</link>
+            <pose>0 0 0 0 0 0</pose>       <!-- TODO(mount) -->
+            <r0>0.11</r0>                  <!-- @27 dBm; from the 12-in spec above -->
             <delta_theta_h>80</delta_theta_h>
             <delta_theta_v>80</delta_theta_v>
-            <rssi_r0>-55.0</rssi_r0>      <!-- hotter anchor at its shorter r0 -->
+            <rssi_r0>-45.0</rssi_r0>       <!-- @27 dBm at r0=0.11 m -->
+            <power_dbm>27.0</power_dbm>    <!-- = p_ref -->
           </antenna>
         </plugin>
     </model>
    
 
-    <!-- ===================== SERVER RACK (static frame + equipment) =====================
-         Rack exterior: 0.60 m (X) x 1.07 m (Y) x ~2.03 m (Z), centered at origin.
-         Front face (faceplates + tags) at y = -0.50.
-         Equipment faceplate width 0.483 m (19 in).                                    -->
+    <!-- ===================== SERVER RACK =====================
+         Front face (faceplates + tags) at local y = -0.50, world y = 3.5.
+         Equipment faceplate width 0.483 m (19 in). -->
     <model name="server_rack">
       <static>true</static>
       <pose>0 4.0 0 0 0 0</pose>
 
-      <!-- ============ Frame ============ -->
+      <!-- Frame -->
       <link name="frame_side_left">
         <pose>-0.29 0 1.0 0 0 0</pose>
         <collision name="collision">
@@ -513,7 +548,7 @@
         </visual>
       </link>
 
-      <!-- ============ Equipment ============
+      <!-- Equipment
            z_center of unit spanning Ua..Ub = 0.05 + ((a-1)+b)/2 * 0.04445 -->
 
       <!-- 4RU UPS, U1-U4 -->
@@ -668,12 +703,10 @@
     </model>
 
     <!-- ===================== RFID TAGS =====================
-         One tag model per equipment item, on the front faceplate
-         (y = 3.497, 3 mm proud of the y = -0.50 front plane).
-         Naming convention: rfid_tag_<equipment>  ->  enumerable by a
-         custom PD-model system plugin via scoped-name prefix match.
-         Visual-only (no collision). Each carries a CommsEndpoint with a
-         unique EPC-style address for the RFComms read path.            -->
+         World y = 3.497: 3 mm proud of the rack front plane (world y = 3.5).
+         Named rfid_tag_<equipment> so the reader can enumerate them by scoped
+         name prefix. Each carries a CommsEndpoint with a unique EPC-style
+         address for the RFComms read path. -->
 
     <model name="rfid_tag_ups">
       <static>true</static>

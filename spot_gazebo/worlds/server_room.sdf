@@ -35,7 +35,6 @@
     </plugin> -->
 
     <gui fullscreen="0">
-      <!-- 3D scene -->
       <plugin filename="MinimalScene" name="3D View">
         <ignition-gui>
           <title>3D View</title>
@@ -157,7 +156,6 @@
        <temperature_gradient>0.2</temperature_gradient>
     </atmosphere>
 
-    <!-- Global directional light -->
     <light type="directional" name="sun">
       <pose>0 0 10 0 0 0</pose>
       <diffuse>0.8 0.8 0.8 1</diffuse>

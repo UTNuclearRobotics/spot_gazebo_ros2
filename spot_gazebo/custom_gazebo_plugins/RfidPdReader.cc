@@ -1,48 +1,41 @@
 /*
  * RfidPdReader — probability-of-detection RFID reader system plugin for
- * Gazebo Ignition Fortress (ign-gazebo 6.x).
+ * Gazebo Ignition Fortress (ign-gazebo 6.x). Attach as a MODEL plugin on
+ * the robot carrying the antenna (see README).
  *
- * Implements the PD model described in:
- *   Alajami, Pous, Moreno, "Simulation of RFID Systems in ROS-Gazebo",
- *   IEEE RFID-TA 2022  (and the extended IEEE Access 2022 version).
+ * PD model from: Alajami, Pous, Moreno, "Simulation of RFID Systems in
+ * ROS-Gazebo", IEEE RFID-TA 2022 (extended in IEEE Access 2022).
  *
- * PD model
- * --------
- * Tag position in antenna-frame spherical coordinates (boresight = +X):
- *     G(thetaH, thetaV) = 2^-[ (2*thetaH/dThetaH)^2 + (2*thetaV/dThetaV)^2 ]
- *     PD = clamp( 0.5 * (r0/R)^2 * G , 0 , pd_max )
- * Anchors: PD(r0,0,0) = 0.5; 1/R^2 surface-power decay; PD halves at the
- * -3 dB beamwidth edges. Each read cycle every tag is Bernoulli-sampled.
- *
- * Passive-tag semantics
- * ---------------------
- * Tags are passive: unpowered world models with no plugins. A tag "exists"
- * to the system only while the reader energizes and reads it:
- *   - TF frames for tags are broadcast ONLY on cycles where the tag was
- *     detected, and are parented to the ANTENNA frame (a reader knows tags
- *     relative to itself, never in world coordinates). Undetected tags go
- *     stale in the TF buffer.
- *   - Each detection carries a synthesized backscatter RSSI using the
- *     passive-tag two-way link budget (1/R^4, antenna gain applied twice):
- *         RSSI [dBm] = rssi_r0 - 40*log10(R/r0) + 2 * 10*log10(G)
- *     anchored so RSSI = rssi_r0 at boresight r0.
- *   - Optional Gaussian noise on the broadcast tag position models reader
- *     localization uncertainty (tf_position_noise_stddev, default 0 =
- *     ground truth, matching the paper's convention).
- *
- * Outputs
- * -------
- * 1) <topic> (default /rfid/reads), ignition::msgs::StringMsg, JSON:
+ * SDF elements (boresight = +X of the antenna frame):
+ *   <antenna_link>body</antenna_link>       link in the ECM: an SDF link
+ *                                           name, NOT a URDF one
+ *   <antenna_pose>0 0 0 0 0 0</antenna_pose>    mounting offset in link frame
+ *   <tag_prefix>rfid_tag_</tag_prefix>
+ *   <r0>2.5</r0>                            [m] PD=0.5 boresight range
+ *   <max_range>10.0</max_range>             [m] COMPUTE GUARD ONLY, not the
+ *                                           reader's range spec; read range
+ *                                           belongs in <r0>
+ *   <pd_max>0.99</pd_max>                   per-cycle PD ceiling
+ *   <update_rate>10</update_rate>           [Hz] read cycles
+ *   <delta_theta_h>65</delta_theta_h>       [deg] -3dB beamwidth
+ *   <delta_theta_v>65</delta_theta_v>       [deg] -3dB beamwidth
+ *   <publish_tf>true</publish_tf>
+ *   <antenna_frame_id>rfid_antenna</antenna_frame_id>
+ *   <antenna_parent_frame_id>...</antenna_parent_frame_id>  default:
+ *                                           <antenna_link>
+ *   <rssi_r0>-60.0</rssi_r0>                [dBm] at r0, boresight
+ *   <tf_position_noise_stddev>0.0</tf_position_noise_stddev>   [m]; 0 =
+ *                                           ground truth
+ *   <topic>/rfid/reads</topic>              StringMsg, JSON:
  *      {"t":12.4,"detected":[{"id":"rfid_tag_ups","r":1.92,"rssi":-63.4}],
  *       "n_tags":10}
- *    Bridges to std_msgs/String with a stock parameter_bridge.
- * 2) <tf_topic> (default /rfid/tf), ignition::msgs::Pose_V with
- *    frame_id / child_frame_id header data (same convention as gz-sim's
- *    DiffDrive TF output). Bridges to tf2_msgs/TFMessage:
+ *   <tf_topic>/rfid/tf</tf_topic>           Pose_V -> tf2_msgs/TFMessage:
  *      antenna_parent_frame -> antenna_frame   (every cycle)
  *      antenna_frame        -> <tag name>      (detected tags only)
+ *   <seed>42</seed>                         omit = random
  *
- * Attach as a MODEL plugin on the robot carrying the antenna (see README).
+ * The "r" field and the tag TF frames are ground truth with no hardware
+ * counterpart — validation only.
  */
 
 #include <chrono>
@@ -78,7 +71,6 @@ class RfidPdReader
       public ignition::gazebo::ISystemConfigure,
       public ignition::gazebo::ISystemPostUpdate
 {
-  // ------------------------------------------------------------------ //
   public: void Configure(
       const ignition::gazebo::Entity &_entity,
       const std::shared_ptr<const sdf::Element> &_sdf,
@@ -154,7 +146,6 @@ class RfidPdReader
            << " tf=" << (this->publishTf ? tfTopic : "off") << "\n";
   }
 
-  // ------------------------------------------------------------------ //
   public: void PostUpdate(
       const ignition::gazebo::UpdateInfo &_info,
       const ignition::gazebo::EntityComponentManager &_ecm) override
@@ -162,14 +153,14 @@ class RfidPdReader
     if (_info.paused || !this->model.Valid(_ecm))
       return;
 
-    // Throttle to update_rate (sim time).
     const std::chrono::duration<double> simTime(_info.simTime);
     if (simTime - this->lastUpdate < this->period)
       return;
     this->lastUpdate = simTime;
 
-    // Lazily resolve the antenna link (robust to <include merge="true">
-    // and lazy entity creation ordering).
+    // Lazily resolve the antenna link (entity creation ordering). A bad
+    // <antenna_link> does not fail loudly: it warns once and then returns
+    // every cycle, so the reader silently publishes nothing at all.
     if (this->antennaLink == ignition::gazebo::kNullEntity)
     {
       this->antennaLink =
@@ -207,7 +198,6 @@ class RfidPdReader
     if (this->tags.empty())
       return;
 
-    // Antenna world pose: link pose composed with the mounting offset.
     const ignition::math::Pose3d antennaWorld =
         ignition::gazebo::worldPose(this->antennaLink, _ecm) *
         this->antennaPose;
@@ -253,8 +243,7 @@ class RfidPdReader
       if (uniform(this->rng) >= pd)
         continue;
 
-      // Passive backscatter link budget: 1/R^4 => 40*log10(R), antenna
-      // gain applied on both forward and return paths => 2*10*log10(G).
+      // Backscatter link budget: 1/R^4, gain applied on both paths.
       const double rssi = this->rssiR0
           - 40.0 * std::log10(range / this->r0)
           + 2.0 * 10.0 * std::log10(gain);
@@ -297,7 +286,7 @@ class RfidPdReader
         this->antennaFrameId, this->antennaPose, simTime);
 
     // Detected tags only: a passive tag exists to the system only while
-    // the reader energizes it. Parented to the antenna frame.
+    // the reader energizes it. Undetected tags go stale in the TF buffer.
     std::normal_distribution<double> gauss(0.0, this->tfNoiseStddev);
     for (const auto &det : detections)
     {
@@ -313,7 +302,6 @@ class RfidPdReader
     this->tfPub.Publish(tfMsg);
   }
 
-  // ------------------------------------------------------------------ //
   /// \brief Normalized main-lobe gain; 0.5 at the -3 dB beamwidth edges.
   private: double Gain(double _thetaH, double _thetaV) const
   {
