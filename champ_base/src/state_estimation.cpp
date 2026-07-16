@@ -44,13 +44,6 @@ StateEstimation::StateEstimation():
     base_broadcaster_ =
       std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
-    // Separate callback groups so the MultiThreadedExecutor can actually run
-    // these concurrently instead of serializing them on the node's default
-    // implicit group. The sync callback and IMU callback each get their own
-    // MutuallyExclusive group (so a callback never races with itself, but
-    // can still run alongside the others). The two publish timers get
-    // Reentrant groups since they don't share mutable state with each other
-    // and neither should have to wait on the other falling behind.
     sync_callback_group_       = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
     imu_callback_group_        = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
     odom_timer_callback_group_ = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
@@ -301,27 +294,9 @@ void StateEstimation::publishBaseToFootprint_()
     pose_msg.pose.pose.position.x = 0.0;
     pose_msg.pose.pose.position.y = 0.0;
 
-    // Manually fixed height instead of the live computation
-    // (-(robot_height / foot_in_contact)) that used to run here. Live
-    // foot-contact-driven height/orientation estimation was found to be
-    // CPU-heavy enough, combined with nav2's MPPI controller + Gazebo, to
-    // make state_estimation_node fall behind real time once the robot
-    // started walking (tf extrapolation errors in nav2). This constant was
-    // captured from a live, working sample of this same computation on
-    // flat ground. If the real standing height changes meaningfully
-    // (different gait, terrain, payload, etc.) this value will need to be
-    // re-measured and updated -- it intentionally trades live accuracy for
-    // a large, fixed CPU savings.
     constexpr float kManualFootprintHeight = 0.4680730700492859f;
     pose_msg.pose.pose.position.z = kManualFootprintHeight;
 
-    // Orientation is likewise fixed to identity rather than computed live
-    // from a per-cycle contact-plane-fit / IMU blend (the removed
-    // touching-feet plane math + imu_rotation logic above this function
-    // previously). Valid for flat-ground walking where roll/pitch stay
-    // near zero; re-introduce IMU- or contact-based orientation if the
-    // robot needs to operate on slopes/uneven terrain where this
-    // assumption would break down.
     pose_msg.pose.pose.orientation.x = 0.0;
     pose_msg.pose.pose.orientation.y = 0.0;
     pose_msg.pose.pose.orientation.z = 0.0;

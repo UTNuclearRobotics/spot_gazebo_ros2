@@ -62,18 +62,7 @@ from spot_msgs.srv import (
 from spot_msgs.action import NavigateTo, WalkTo
 from spot_msgs.msg import BatteryStateArray, BatteryState
 
-
-# Hold actions in EXECUTING for this long (wall-clock seconds) before reporting
-# success. WalkToPose (spot_behaviors) only POLLS goal_handle_->get_status();
-# it never requests the result. If we succeed instantly, the ACCEPTED and
-# SUCCEEDED status samples are published almost simultaneously, and the terminal
-# one can be processed by the client BEFORE it has registered the goal handle
-# (from the goal response) -- so rclcpp_action drops it, no further status is
-# ever published, get_status() stays ACCEPTED, and the behavior hangs on
-# RUNNING forever. Staying in EXECUTING briefly guarantees the client sees
-# EXECUTING first and then a freshly-published SUCCEEDED it can't miss.
 ACTION_SETTLE_S = 1.0
-
 
 class SimSpotDriver(Node):
     """Simulation stand-in for the real spot_driver node.
@@ -84,18 +73,11 @@ class SimSpotDriver(Node):
     """
 
     def __init__(self):
-        # Node name MUST match the real driver so that ~/<service> resolves to
-        # /spot_driver/<service> and existing clients bind without changes.
         super().__init__('spot_driver')
 
-        # Run on the same clock as Gazebo/CHAMP. Declared here (default True) so
-        # it can still be overridden from a launch file.
         if not self.has_parameter('use_sim_time'):
             self.declare_parameter('use_sim_time', True)
 
-        # A reentrant group lets multiple service calls run concurrently under
-        # a MultiThreadedExecutor -- matches how the real driver behaves and
-        # avoids self-deadlocks if a behavior calls one service from another.
         cb = ReentrantCallbackGroup()
 
         # ---- Minimal internal state (kept self-consistent) ----------------
@@ -109,11 +91,6 @@ class SimSpotDriver(Node):
         self._payloads = {}              # guid/name -> attached (bool)
 
         # ---- Simulated battery ---------------------------------------------
-        # CheckBattery subscribes /spot_driver/status/battery_states with
-        # SensorDataQoS (BEST_EFFORT); the publisher MUST match or no message
-        # is ever delivered and the behavior times out. A fixed healthy value
-        # is enough to pass the threshold check; expose it as a parameter so a
-        # test can drive it low to exercise the failure branch.
         self.declare_parameter('battery_percentage', 95.0)
 
         # ================= std_srvs/Trigger services =======================
@@ -167,8 +144,6 @@ class SimSpotDriver(Node):
         )
 
         # ================= Status publishers ===============================
-        # Nothing else in the sim publishes battery state, so CheckBattery
-        # times out. Publish a steady, healthy reading at 2 Hz.
         self._battery_pub = self.create_publisher(
             BatteryStateArray, '~/status/battery_states', qos_profile_sensor_data)
         self.create_timer(0.5, self._publish_battery, callback_group=cb)
@@ -184,14 +159,9 @@ class SimSpotDriver(Node):
     def _publish_battery(self):
         pct = float(self.get_parameter('battery_percentage').value)
         stamp = self.get_clock().now().to_msg()
-
-        # Field layout differs across spot_msgs versions (e.g. the timestamp
-        # lives on BatteryStateArray.header, not on BatteryState). Only
-        # charge_percentage is guaranteed -- it's what CheckBattery reads.
-        # Everything else is set through hasattr so a schema mismatch can never
-        # crash the driver again.
         battery = BatteryState()
         battery.charge_percentage = pct
+
         if hasattr(battery, 'identifier'):
             battery.identifier = 'sim_battery_0'
         if hasattr(battery, 'timestamp'):
@@ -394,8 +364,6 @@ class SimSpotDriver(Node):
         self.get_logger().info(
             f'[sim] walk_to: target ({p.x:.2f}, {p.y:.2f}, {p.z:.2f}) (simulated)'
         )
-        # Guarded feedback: getattr() with a 0 default + the hasattr check mean
-        # a missing enum name can never raise here and wedge the goal.
         walk_feedback = {
             'status_enum': getattr(WalkTo.Feedback, 'STATUS_IN_PROGRESS', 0),
             'status_string': 'in_progress',
@@ -412,11 +380,6 @@ class SimSpotDriver(Node):
             self.get_logger().info('[sim] walk_to: canceled')
             return result
 
-        # succeed() reports success to WalkToPose: it transitions the goal to
-        # STATUS_SUCCEEDED, and the client's get_status() then returns SUCCEEDED.
-        # Because we held EXECUTING first, that status is a fresh sample the
-        # client reliably receives -- and because we always succeed, WalkToPose
-        # never takes its ABORTED/CANCELED branch (never calls checkGoal()).
         goal_handle.succeed()
         result = WalkTo.Result()
         result.success = True

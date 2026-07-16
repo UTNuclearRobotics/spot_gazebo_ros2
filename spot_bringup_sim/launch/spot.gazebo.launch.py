@@ -78,14 +78,6 @@ def generate_launch_description():
         ]
     )
 
-    # contact_adapter = Node(
-    #     package='spot_bringup_sim',
-    #     executable='contact_adapter_node',
-    #     name='contact_adapter',
-    #     output='screen',
-    #     parameters=[{'use_sim_time': True}],
-    # )
-
     # Controller
     config_path = get_package_share_directory("champ_config")
     links_config = PathJoinSubstitution([config_path, 'config', 'links', 'links.yaml'])
