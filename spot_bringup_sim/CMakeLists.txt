@@ -29,17 +29,7 @@ ament_target_dependencies(pointcloud_transform
   geometry_msgs
 )
 
-add_executable(contact_adapter_node src/contact_adapter_node.cpp)
-ament_target_dependencies(contact_adapter_node
-  rclcpp
-  champ_msgs
-  ros_gz_interfaces
-)
-
 install(TARGETS pointcloud_transform
-  DESTINATION lib/${PROJECT_NAME})
-
-install(TARGETS contact_adapter_node
   DESTINATION lib/${PROJECT_NAME})
 
 install(PROGRAMS
