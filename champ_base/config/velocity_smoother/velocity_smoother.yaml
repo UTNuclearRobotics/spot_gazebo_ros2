@@ -1,22 +1,11 @@
-# Example configuration:
-# - velocity limits are around a 10% above the physical limits
-# - acceleration limits are just low enough to avoid jerking
-
-# Mandatory parameters
-speed_lim_v_x: 0.5
-speed_lim_v_y: 0.35
-
-speed_lim_w: 0.4
-
-accel_lim_v: 1.0
-accel_lim_w: 2.0
-
-# Optional parameters
-frequency: 10.0
-decel_factor: 1.0
-
-# Robot velocity feedback type:
-#  0 - none
-#  1 - odometry
-#  2 - end robot commands
-robot_feedback: 2
+velocity_smoother:
+  ros__parameters:
+    smoothing_frequency: 100.0
+    scale_velocities: false
+    feedback: "OPEN_LOOP"
+    max_velocity:  [0.5,  0.35,  0.4]    # vx, vy, w — carried over from the dead config
+    min_velocity:  [-0.5, -0.35, -0.4]
+    max_accel:     [1.0,  1.0,   2.0]
+    max_decel:     [-1.0, -1.0,  -2.0]
+    deadband_velocity: [0.0, 0.0, 0.0]
+    velocity_timeout: 1.0

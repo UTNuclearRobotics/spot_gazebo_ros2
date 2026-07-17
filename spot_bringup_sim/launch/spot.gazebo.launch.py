@@ -239,8 +239,36 @@ def generate_launch_description():
             {'use_sim_time': True},
         ],
         remappings=[
-            ('cmd_vel_out', '/spot_driver/cmd_vel'),
+            ('cmd_vel_out', '/spot_driver/cmd_vel_raw'),
         ],
+    )
+
+    velocity_smoother = Node(
+        package='nav2_velocity_smoother',
+        executable='velocity_smoother',
+        name='velocity_smoother',
+        output='screen',
+        parameters=[
+            os.path.join(ekf_config_path, 'config/velocity_smoother',
+                         'velocity_smoother.yaml'),
+            {'use_sim_time': True},
+        ],
+        remappings=[
+            ('cmd_vel', '/spot_driver/cmd_vel_raw'),
+            ('cmd_vel_smoothed', '/spot_driver/cmd_vel'),
+        ],
+    )
+
+    velocity_smoother_lifecycle = Node(
+        package='nav2_lifecycle_manager',
+        executable='lifecycle_manager',
+        name='lifecycle_manager_velocity_smoother',
+        output='screen',
+        parameters=[{
+            'use_sim_time': True,
+            'autostart': True,
+            'node_names': ['velocity_smoother'],
+        }],
     )
 
     # Filters the robot body out of the bridged lidar points (already in velodyne frame)
@@ -289,6 +317,8 @@ def generate_launch_description():
         pointcloud_mux,
         stow_arm,
         twist_mux,
+        velocity_smoother,
+        velocity_smoother_lifecycle,
         pointcloud_filter_after_bridge,
         rviz,
     ])
