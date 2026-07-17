@@ -128,7 +128,6 @@ def generate_launch_description():
         parameters=[{'use_sim_time': True}],
         remappings=[
             ('/robot_description', '/spot_driver/robot_description'),
-            ('/robot_description_semantic', '/spot_moveit/robot_description_semantic'),
         ],
     )
 

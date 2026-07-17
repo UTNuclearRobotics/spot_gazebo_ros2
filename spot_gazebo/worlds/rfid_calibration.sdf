@@ -1,0 +1,412 @@
+<?xml version="1.0"?>
+<!--
+  rfid_calibration.sdf
+
+  TAG POSE DERIVATION (world), from the fixture file's fiducial-frame offsets.
+    Fiducial->model: fid +X = model +X, fid +Y = model -Z, fid +Z = model +Y.
+    Tag face plane is model y = -0.5155; plate centre is model (0, *, 0.85).
+      model_x = fid_x            model_z = 0.85 - fid_y            model_y = -0.5155
+    Then model->world: wx = 2 + my = 1.4845,  wy = -mx,  wz = mz.
+
+      fixture [x, y, z]        model (x, y, z)            world (x, y, z)
+      l_top  [-0.14,-0.18,0]   (-0.14, -0.5155, 1.03)     (1.4845,  0.14, 1.03)
+      l_mid  [-0.14, 0.00,0]   (-0.14, -0.5155, 0.85)     (1.4845,  0.14, 0.85)
+      l_bot  [-0.14, 0.18,0]   (-0.14, -0.5155, 0.67)     (1.4845,  0.14, 0.67)
+      r_top  [ 0.14,-0.18,0]   ( 0.14, -0.5155, 1.03)     (1.4845, -0.14, 1.03)
+      r_mid  [ 0.14, 0.00,0]   ( 0.14, -0.5155, 0.85)     (1.4845, -0.14, 0.85)
+      r_bot  [ 0.14, 0.18,0]   ( 0.14, -0.5155, 0.67)     (1.4845, -0.14, 0.67)
+
+    Note wy = -mx: fixture +x (the robot's right, looking at the plate) is world -Y.
+    Sanity-check that against the GUI before believing a fit - a mirrored fixture is
+    self-consistent and fits cleanly around reflected geometry.
+
+  REACHABILITY, AND WHY THE FIRST RUN WILL FAIL:
+    The plate face is at world x = 1.4845. alpha_detector - the antenna - reaches at
+    most ~1.348 m from the body origin (alpha_detector.xacro:13). The ladder wants the
+    antenna 0.03-0.40 m off the tag, i.e. world x 1.4545 down to 1.0845. The near end is
+    ~14 cm beyond full extension and the far end is marginal, so from THIS start pose
+    most of the sweep is unreachable and MoveHandToPose will fail pose after pose.
+    That is the intended scenario, not a bug in the world: it is what the base-pose
+    optimality check exists to detect and correct. But that step is NOT BUILT YET, so
+    today the tree will latch the fiducial and then fail the whole sweep. Teleop closer
+    (x ~0.55-0.65) to exercise the sweep itself in the meantime.
+-->
+<sdf version="1.9">
+  <world name="rfid_calibration">
+
+    <plugin
+        filename="ignition-gazebo-physics-system"
+        name="ignition::gazebo::systems::Physics">
+    </plugin>
+
+    <plugin
+        filename="ignition-gazebo-sensors-system"
+        name="ignition::gazebo::systems::Sensors">
+        <render_engine>ogre2</render_engine>
+    </plugin>
+
+    <plugin
+        filename="ignition-gazebo-contact-system"
+        name="ignition::gazebo::systems::Contact">
+    </plugin>
+
+    <plugin
+        filename="ignition-gazebo-scene-broadcaster-system"
+        name="ignition::gazebo::systems::SceneBroadcaster">
+    </plugin>
+
+    <plugin
+        filename="ignition-gazebo-user-commands-system"
+        name="ignition::gazebo::systems::UserCommands">
+    </plugin>
+
+    <physics name="1ms" type="ode">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+
+    <scene>
+      <ambient>0.4 0.4 0.4 1.0</ambient>
+      <background>0.7 0.7 0.7 1.0</background>
+      <grid>true</grid>
+      <origin_visual>true</origin_visual>
+    </scene>
+
+    <atmosphere type="adiabatic">
+       <temperature>288</temperature>
+       <temperature_gradient>0.2</temperature_gradient>
+    </atmosphere>
+
+    <!-- Two lights, where server_rack_rfid has one. The AprilTag is read by a camera,
+         not by the RFID model, and a single directional light rakes the plate at a
+         grazing angle and blows out or shadows the tag depending on approach heading.
+         The fill light is aimed down +X at the plate face to keep quad contrast stable.
+         Detection quality is a first-class concern here in a way it never was in the
+         survey world. -->
+    <light type="directional" name="sun">
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <direction>-0.5 0.1 -0.9</direction>
+      <cast_shadows>true</cast_shadows>
+    </light>
+
+    <light type="directional" name="plate_fill">
+      <pose>0 0 2.0 0 0 0</pose>
+      <diffuse>0.4 0.4 0.4 1</diffuse>
+      <specular>0.0 0.0 0.0 1</specular>
+      <direction>0.7 0 -0.7</direction>
+      <cast_shadows>false</cast_shadows>
+    </light>
+
+    <!-- ===================== ROOM ENCLOSURE ===================== -->
+
+    <model name="room_floor">
+      <static>true</static>
+      <pose>0 0 -0.1 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>15.0 15.0 0.1</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>15.0 15.0 0.1</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.6 0.6 0.6 1</ambient>
+            <diffuse>0.6 0.6 0.6 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="room_wall_front">
+      <!-- -Y wall -->
+      <static>true</static>
+      <pose>0 -7.5 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>15.0 0.1 3</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>15.0 0.1 3</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.85 0.85 0.85 1</ambient>
+            <diffuse>0.85 0.85 0.85 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="room_wall_back">
+      <!-- +Y wall -->
+      <static>true</static>
+      <pose>0 7.5 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>15.0 0.1 3</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>15.0 0.1 3</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.85 0.85 0.85 1</ambient>
+            <diffuse>0.85 0.85 0.85 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="room_wall_left">
+      <!-- -X wall -->
+      <static>true</static>
+      <pose>-7.5 0 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>0.1 15.0 3</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.1 15.0 3</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.85 0.85 0.85 1</ambient>
+            <diffuse>0.85 0.85 0.85 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="room_wall_right">
+      <!-- +X wall -->
+      <static>true</static>
+      <pose>7.5 0 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>0.1 15.0 3</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.1 15.0 3</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.85 0.85 0.85 1</ambient>
+            <diffuse>0.85 0.85 0.85 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ===================== SPOT ===================== -->
+
+    <model name="spot">
+        <pose>0 0.0 0.7 0 0 0</pose>
+        <include merge="true">
+            <uri>package://spot_description_sim/models/spot</uri>
+        </include>
+
+        <!-- Reader block copied verbatim from server_rack_rfid.sdf except <occluder>.
+             r0 = 0.11 m at 27 dBm from the datasheet's 12 in max read distance assuming
+             N = 10 interrogations. Below ~15 dBm, r0(P) = 0.11 * 10^((P-27)/20) falls
+             inside the near field (far-field boundary ~1.4-3.2 cm at 915 MHz) where the
+             1/R^2 and 1/R^4 exponents stop holding: the usable sweep is ~15-27 dBm. -->
+        <plugin filename="RfidReader" name="rfid::RfidReader">
+          <reader_id>vulcan_iron</reader_id>
+          <tag_prefix>rfid_tag_</tag_prefix>
+          <update_rate>10</update_rate>
+          <multiplex>true</multiplex>
+          <max_range>0.5</max_range>      <!-- COMPUTE GUARD, not the range spec -->
+          <pd_max>0.99</pd_max>
+          <topic>/rfid/reads</topic>
+          <seed>42</seed>
+
+          <publish_tf>true</publish_tf>
+          <tf_topic>/rfid/tf</tf_topic>
+          <tf_position_noise_stddev>0.0</tf_position_noise_stddev>
+
+          <power_topic>/rfid/set_power</power_topic>
+          <p_ref>27.0</p_ref>
+          <p_min>0.0</p_min>
+          <p_max>27.0</p_max>
+          <power_step>0.5</power_step>
+
+          <!-- Both are PLACEHOLDERS pending Tests B and C. Note the circularity: this
+               world is where the characterization protocol is rehearsed, so these values
+               are an assumption being fed into the run that is supposed to measure them.
+               Set both to 0.0 for a deterministic link when validating the PIPELINE
+               (does the fit recover the numbers below?) rather than the noise model. -->
+          <rssi_noise_stddev>1.5</rssi_noise_stddev>
+          <tag_offset_stddev>2.0</tag_offset_stddev>
+
+          <report_n_tags>true</report_n_tags>
+
+          <!-- Occluder retargeted at calibration_plate_model, and resized: this rack is
+               0.61 x 1.07 x 1.8669 (front face local y = -0.515), where server_rack's was
+               different. Body spans local y -0.495..+0.525 -> centre 0.015, depth 1.02.
+               The 2 cm inset from the front face is deliberate and load-bearing: the plate
+               tags sit at local y = -0.5155, IN FRONT of the volume, so an antenna ray from
+               the robot reaches them without ever entering the occluder. Move the volume
+               forward and every plate read silently dies. -->
+          <occluder>
+            <name>rack_body</name>
+            <model>calibration_plate_model</model>
+            <pose>0 0.015 0.9335 0 0 0</pose>
+            <size>0.60 1.02 1.85</size>
+            <attenuation_db>3.0</attenuation_db>
+            <attenuation_db_per_m>30.0</attenuation_db_per_m>
+          </occluder>
+
+          <!-- <pose> now matches urdf/rfid_antenna.xacro's 0.11873 0 -0.136, i.e. the
+               antenna is co-located with alpha_detector rather than with arm0_hand.
+               The two files must stay equal. -->
+          <antenna>
+            <name>hand</name>              <!-- TF frame: rfid_antenna_hand -->
+            <link>arm0_hand</link>
+            <pose>0.11873 0 -0.136 0 0 0</pose>
+            <r0>0.11</r0>
+            <delta_theta_h>80</delta_theta_h>
+            <delta_theta_v>80</delta_theta_v>
+            <rssi_r0>-45.0</rssi_r0>
+            <power_dbm>27.0</power_dbm>
+          </antenna>
+        </plugin>
+    </model>
+
+    <!-- ===================== RACK + CALIBRATION PLATE =====================
+         ~2 m in front of Spot along +X. yaw -1.5708 turns the model's -Y front face
+         toward the robot. Rack centre x = 2.0, so the plate face lands at x = 1.4845. -->
+    <include>
+      <name>calibration_plate_model</name>
+      <uri>model://calibration_plate_model</uri>
+      <pose>2.0 0 0 0 0 -1.5708</pose>
+    </include>
+
+    <!-- ===================== PLATE RFID TAGS =====================
+         Top-level models: RfidReader matches on model name against tag_prefix.
+         Names must equal the keys in calibration_fixture.yaml exactly - the recorder
+         keys on EPC, so a mismatch contributes nothing to sigma_off rather than erroring.
+         yaw -1.5708 matches the rack, putting each box's 0.004 m thin axis along world X
+         (the plate normal) and its 0.06 m width along world Y. -->
+
+    <model name="rfid_tag_plate_l_top">
+      <static>true</static>
+      <pose>1.4845 0.14 1.03 0 0 -1.5708</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="rfid_tag_plate_l_mid">
+      <static>true</static>
+      <pose>1.4845 0.14 0.85 0 0 -1.5708</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="rfid_tag_plate_l_bot">
+      <static>true</static>
+      <pose>1.4845 0.14 0.67 0 0 -1.5708</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- r_mid is calibration_params.yaml's target_tag: it carries the ladder and both
+         arcs. Mid-height on purpose - a +/-60 deg elevation arc around a bottom-row tag
+         would drive the antenna under the arm's reachable floor. -->
+    <model name="rfid_tag_plate_r_top">
+      <static>true</static>
+      <pose>1.4845 -0.14 1.03 0 0 -1.5708</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="rfid_tag_plate_r_mid">
+      <static>true</static>
+      <pose>1.4845 -0.14 0.85 0 0 -1.5708</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.9 0.5 0.1 1</ambient>
+            <diffuse>0.9 0.5 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="rfid_tag_plate_r_bot">
+      <static>true</static>
+      <pose>1.4845 -0.14 0.67 0 0 -1.5708</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+  </world>
+</sdf>

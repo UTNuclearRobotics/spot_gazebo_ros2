@@ -1,0 +1,289 @@
+<?xml version="1.0"?>
+<!--
+  calibration_plate_model
+
+  A 42U rack shell with the RFID calibration plate mounted on its front face.
+  Front of rack = -Y, matching server_rack_rfid.sdf's convention.
+
+  The RFID tags are NOT here. The RfidReader plugin discovers tags by scanning
+  top-level world model names against <tag_prefix>rfid_tag_</tag_prefix>, and
+  server_rack_rfid.sdf accordingly declares one top-level <model name="rfid_tag_*">
+  per tag with an absolute world pose. The six rfid_tag_plate_* models therefore live
+  in worlds/rfid_calibration.sdf, not in this file. Their world poses are derived from
+  this model's pose - if you move the plate here, they must move there too.
+
+  FIDUCIAL FRAME, derived (this is the part that is easy to get backwards):
+    The plate faces -Y in model coords, so a robot in front of it looks along +Y.
+    Robot forward = +Y, robot up = +Z, therefore robot's right = +X (left = up x
+    forward = z_hat x y_hat = -x_hat).
+    apriltag with z_up:false publishes +X right, +Y down, +Z INTO the tag. So in
+    model coords:
+        fiducial +X = model +X
+        fiducial +Y = model -Z
+        fiducial +Z = model +Y
+    Right-handed check: X x Y = (+x_hat) x (-z_hat) = +y_hat = fiducial +Z. OK.
+    This is a -90 deg rotation about model X.
+
+    That mapping is what makes rfid_inventory_tracking/config/calibration_fixture.yaml's
+    offsets land where this file puts the tag boxes, and what makes
+    calibration_params.yaml's tag_normal [0,0,-1] point out of the plate toward the
+    robot rather than into the rack.
+-->
+<sdf version="1.9">
+  <model name="calibration_plate_model">
+    <static>true</static>
+
+    <!-- ============ Calibration plate geometry (model frame) ============
+         Plate centre:      (0, -0.51,  0.85)   0.40 wide (X) x 0.50 tall (Z)
+         Plate front face:  y = -0.515          flush with the front posts
+         AprilTag centre:   (0, -0.5155, 0.85)  0.5 mm proud, so it never z-fights
+         Tag face plane:    y = -0.5155         calibration_fixture.yaml's z = 0 plane
+
+         Plate centre height 0.85 is deliberate: it matches the old
+         rfid_tag_patch_panel_3 at world z 0.8501, the tag the previous fixed-stance
+         protocol targeted precisely because it kept a +/-60 deg elevation arc off the
+         arm's reachable floor.
+    -->
+
+    <link name="rack_body">
+
+      <inertial>
+        <mass>60.0</mass>
+        <pose>0 0 0.9335 0 0 0</pose>
+        <inertia>
+          <ixx>15.0</ixx>
+          <iyy>12.0</iyy>
+          <izz>5.0</izz>
+        </inertia>
+      </inertial>
+
+      <!-- Single bounding-box collision for cheap physics -->
+      <collision name="rack_collision">
+        <pose>0 0 0.9335 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.61 1.07 1.8669</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <!-- ===================== VISUALS ===================== -->
+
+      <!-- Bottom plate -->
+      <visual name="bottom_plate">
+        <pose>0 0 0.01 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.61 1.07 0.02</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.08 0.08 0.08 1</ambient>
+          <diffuse>0.12 0.12 0.12 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- Top plate -->
+      <visual name="top_plate">
+        <pose>0 0 1.8569 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.61 1.07 0.02</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.08 0.08 0.08 1</ambient>
+          <diffuse>0.12 0.12 0.12 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- Corner posts (4x), square 0.04 x 0.04 cross-section -->
+      <visual name="post_front_left">
+        <pose>-0.285 -0.515 0.9335 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.04 0.04 1.8669</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.05 0.05 0.05 1</ambient>
+          <diffuse>0.1 0.1 0.1 1</diffuse>
+        </material>
+      </visual>
+
+      <visual name="post_front_right">
+        <pose>0.285 -0.515 0.9335 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.04 0.04 1.8669</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.05 0.05 0.05 1</ambient>
+          <diffuse>0.1 0.1 0.1 1</diffuse>
+        </material>
+      </visual>
+
+      <visual name="post_back_left">
+        <pose>-0.285 0.515 0.9335 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.04 0.04 1.8669</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.05 0.05 0.05 1</ambient>
+          <diffuse>0.1 0.1 0.1 1</diffuse>
+        </material>
+      </visual>
+
+      <visual name="post_back_right">
+        <pose>0.285 0.515 0.9335 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.04 0.04 1.8669</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.05 0.05 0.05 1</ambient>
+          <diffuse>0.1 0.1 0.1 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- Side panels (left/right) -->
+      <visual name="side_panel_left">
+        <pose>-0.295 0 0.9335 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.02 1.07 1.8669</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.12 0.12 0.12 1</ambient>
+          <diffuse>0.18 0.18 0.18 1</diffuse>
+        </material>
+      </visual>
+
+      <visual name="side_panel_right">
+        <pose>0.295 0 0.9335 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.02 1.07 1.8669</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.12 0.12 0.12 1</ambient>
+          <diffuse>0.18 0.18 0.18 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- Back panel -->
+      <visual name="back_panel">
+        <pose>0 0.525 0.9335 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.61 0.02 1.8669</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.1 0.1 0.1 1</ambient>
+          <diffuse>0.15 0.15 0.15 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- Front mounting rails (19" / 0.4826m apart), thin vertical strips -->
+      <visual name="mount_rail_left">
+        <pose>-0.2413 -0.515 0.9335 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.03 0.03 1.8669</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.3 0.3 0.3 1</ambient>
+          <diffuse>0.4 0.4 0.4 1</diffuse>
+        </material>
+      </visual>
+
+      <visual name="mount_rail_right">
+        <pose>0.2413 -0.515 0.9335 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.03 0.03 1.8669</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.3 0.3 0.3 1</ambient>
+          <diffuse>0.4 0.4 0.4 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- ===================== CALIBRATION PLATE ===================== -->
+
+      <!-- Backing board. Matt white, and deliberately so: it is the AprilTag's quiet
+           zone. A dark or specular backing kills the detector's quad contrast at the
+           tag border, which shows up as intermittent detection at range rather than as
+           an obvious failure. VISUAL ONLY - no <collision>, matching the equipment
+           faceplates in server_rack_rfid.sdf, so the 5 mm proud tag cannot push the arm
+           planner around or appear in costmaps. -->
+      <visual name="calib_plate_backing">
+        <pose>0 -0.51 0.85 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.40 0.01 0.50</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.85 0.85 0.85 1</ambient>
+          <diffuse>0.95 0.95 0.95 1</diffuse>
+          <specular>0.02 0.02 0.02 1</specular>
+        </material>
+      </visual>
+
+      <!-- The AprilTag itself: Standard41h12, id 0.
+           Texture reused from worlds/materials/textures/ - tag41_12_0000{0,1,2}.png
+           were already in the tree, unused. That is why the detector config is
+           Standard41h12 rather than the 36h11 it started as: no artwork to generate.
+
+           SIZE, and this is the number that matters most in this file:
+             apriltag_ros's `size` is the edge of the tag's BLACK BORDER, not of the
+             image. Standard41h12's PNG is 9x9 px: 1 px white margin, 1 px black border,
+             5x5 data, 1 px black border, 1 px white margin. The black border's outer
+             edge therefore spans 7 of the 9 px.
+             To make the black edge exactly the 0.15 m that spot_apriltag.yaml declares,
+             the full-image box must be 0.15 * 9/7 = 0.19286 m.
+
+           VERIFY BOTH OF THESE BEFORE TRUSTING A FIT. `size` scales recovered range
+           linearly, and range error goes straight into r0 and rssi_r0 - a 10% size
+           error is a 10% r0 error, and the fit will look perfectly clean around it.
+             1. The 9x9 / 7-of-9 layout above is from the family's definition, not from
+                measuring this PNG. Open it and count.
+             2. Gazebo's UV mapping onto a <box> face is not guaranteed to land the
+                texture unrotated/unmirrored on the -Y face. A mirrored tag simply does
+                not decode (fails safe); a 90 deg rotated one decodes as a DIFFERENT id
+                and yields a fiducial frame rotated by 90 deg (fails silently, and takes
+                up_hint with it). Check it in the GUI.
+           Sim makes this cheap to check: the plate's true pose is exact and known, so
+             ros2 run tf2_ros tf2_echo hand_color_image_sensor rfid_calibration_fiducial_raw
+           against the world pose tells you the ratio directly. -->
+      <visual name="calib_plate_apriltag">
+        <pose>0 -0.5155 0.85 -1.5708 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.19286 0.19286 0.001</size>
+          </box>
+        </geometry>
+        <material>
+          <pbr>
+            <metal>
+              <albedo_map>../../worlds/materials/textures/tag41_12_00000.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+
+    </link>
+  </model>
+</sdf>
