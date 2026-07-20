@@ -274,9 +274,14 @@
           </box>
         </geometry>
         <material>
+          <!-- MUST be white: ogre2 multiplies albedo_map by the base colour, so any tint
+               here tints the tag. Omitting it is worse -- albedo defaults to black and the
+               tag renders solid black with no warning. -->
+          <ambient>1 1 1 1</ambient>
+          <diffuse>1 1 1 1</diffuse>
           <pbr>
             <metal>
-              <albedo_map>../../worlds/materials/textures/tag41_12_00000.png</albedo_map>
+              <albedo_map>model://calibration_plate_model/materials/textures/tag41_12_00000.png</albedo_map>
               <metalness>0.0</metalness>
               <roughness>1.0</roughness>
             </metal>
