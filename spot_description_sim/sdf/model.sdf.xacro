@@ -841,7 +841,6 @@
       <child>arm0_shoulder_pitch_link</child>
       <axis>
         <xyz>0 1 0</xyz>
-        <initial_position>-3.1360</initial_position>
         <limit>
           <lower>-3.14159265358979311599</lower>
           <upper>0.52359877559829881565</upper>
@@ -1158,8 +1157,9 @@
       <dimensions>3</dimensions>
     </plugin>
 
-    <xacro:macro name="pid_joint" params="joint p i d i_min:=-5.0 i_max:=5.0">
+    <xacro:macro name="pid_joint" params="joint p i d i_min:=-5.0 i_max:=5.0 init:=0.0">
       <joint_name>${joint}</joint_name>
+      <initial_position>${init}</initial_position>
       <position_p_gain>${p}</position_p_gain>
       <position_i_gain>${i}</position_i_gain>
       <position_d_gain>${d}</position_d_gain>
@@ -1185,14 +1185,32 @@
       <xacro:pid_joint joint="rear_right_hip_y"  p="500" i="1" d="20"/>
       <xacro:pid_joint joint="rear_right_knee"   p="500" i="1" d="20"/>
 
-      <!-- Arm joints — arm0_shoulder_roll is fixed and excluded -->
-      <xacro:pid_joint joint="arm0_shoulder_yaw"   p="500" i="0" d="20"/>
-      <xacro:pid_joint joint="arm0_shoulder_pitch" p="500" i="0" d="20"/>
-      <xacro:pid_joint joint="arm0_elbow_pitch"    p="500" i="0" d="20"/>
-      <xacro:pid_joint joint="arm0_elbow_roll"     p="150" i="0" d="1"/>
-      <xacro:pid_joint joint="arm0_wrist_pitch"    p="150" i="0" d="2"/>
-      <xacro:pid_joint joint="arm0_wrist_roll"     p="80"  i="0" d="0.2"/>
-      <xacro:pid_joint joint="arm0_fingers"        p="30"  i="0" d="0.1"/>
+      <!-- Arm joints — arm0_shoulder_roll is fixed and excluded.
+           init values = STOW_CONFIG from sim_manipulation_driver.py, so the
+           controller's hold target matches the spawn pose set below. -->
+      <xacro:pid_joint joint="arm0_shoulder_yaw"   p="500" i="0" d="20"  init="-0.0011"/>
+      <xacro:pid_joint joint="arm0_shoulder_pitch" p="500" i="0" d="20"  init="-3.1360"/>
+      <xacro:pid_joint joint="arm0_elbow_pitch"    p="500" i="0" d="20"  init="3.1337"/>
+      <xacro:pid_joint joint="arm0_elbow_roll"     p="150" i="0" d="1"   init="1.5699"/>
+      <xacro:pid_joint joint="arm0_wrist_pitch"    p="150" i="0" d="2"   init="-0.0027"/>
+      <xacro:pid_joint joint="arm0_wrist_roll"     p="80"  i="0" d="0.2" init="-1.5684"/>
+      <xacro:pid_joint joint="arm0_fingers"        p="30"  i="0" d="0.1" init="0.0"/>
+    </plugin>
+
+    <!-- Kinematically teleport the arm to stow on the first physics step.
+         The JTC init targets above only make the PID *pull* toward stow
+         (a violent pi-radian swing at spawn that kicks the body over); this
+         plugin resets the joint states directly, so the arm is simply there.
+         Values = STOW_CONFIG (sim_manipulation_driver.py). -->
+    <plugin filename="JointStateInitializer"
+            name="spot_gazebo::JointStateInitializer">
+      <joint name="arm0_shoulder_yaw">-0.0011</joint>
+      <joint name="arm0_shoulder_pitch">-3.1360</joint>
+      <joint name="arm0_elbow_pitch">3.1337</joint>
+      <joint name="arm0_elbow_roll">1.5699</joint>
+      <joint name="arm0_wrist_pitch">-0.0027</joint>
+      <joint name="arm0_wrist_roll">-1.5684</joint>
+      <joint name="arm0_fingers">0.0</joint>
     </plugin>
 
   </model>

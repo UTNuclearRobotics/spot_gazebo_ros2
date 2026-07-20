@@ -57,8 +57,20 @@ target_link_libraries(RfidReader
   ignition-plugin1::ignition-plugin1
 )
 
+# Kinematic joint-state teleport at spawn (arm stow pose) — see the header
+# comment in JointStateInitializer.cc for why the JTC initial_position
+# parameter is not enough.
+add_library(JointStateInitializer SHARED
+  custom_gazebo_plugins/JointStateInitializer.cc
+)
+set_property(TARGET JointStateInitializer PROPERTY CXX_STANDARD 17)
+target_link_libraries(JointStateInitializer
+  ignition-gazebo6::ignition-gazebo6
+  ignition-plugin1::ignition-plugin1
+)
+
 install(
-  TARGETS RfidPdReader RfidReader
+  TARGETS RfidPdReader RfidReader JointStateInitializer
   LIBRARY DESTINATION lib/${PROJECT_NAME}
 )
 
