@@ -19,17 +19,6 @@
     Note wy = -mx: fixture +x (the robot's right, looking at the plate) is world -Y.
     Sanity-check that against the GUI before believing a fit - a mirrored fixture is
     self-consistent and fits cleanly around reflected geometry.
-
-  REACHABILITY, AND WHY THE FIRST RUN WILL FAIL:
-    The plate face is at world x = 1.4845. alpha_detector - the antenna - reaches at
-    most ~1.348 m from the body origin (alpha_detector.xacro:13). The ladder wants the
-    antenna 0.03-0.40 m off the tag, i.e. world x 1.4545 down to 1.0845. The near end is
-    ~14 cm beyond full extension and the far end is marginal, so from THIS start pose
-    most of the sweep is unreachable and MoveHandToPose will fail pose after pose.
-    That is the intended scenario, not a bug in the world: it is what the base-pose
-    optimality check exists to detect and correct. But that step is NOT BUILT YET, so
-    today the tree will latch the fiducial and then fail the whole sweep. Teleop closer
-    (x ~0.55-0.65) to exercise the sweep itself in the meantime.
 -->
 <sdf version="1.9">
   <world name="rfid_calibration">
@@ -233,7 +222,7 @@
     <!-- ===================== SPOT ===================== -->
 
     <model name="spot">
-        <pose>0 0.0 0.7 0 0 0</pose>
+        <pose>-0.25 0.0 0.7 0 0 0</pose>
         <include merge="true">
             <uri>package://spot_description_sim/models/spot</uri>
         </include>
@@ -279,7 +268,9 @@
                The 2 cm inset from the front face is deliberate and load-bearing: the plate
                tags sit at local y = -0.5155, IN FRONT of the volume, so an antenna ray from
                the robot reaches them without ever entering the occluder. Move the volume
-               forward and every plate read silently dies. -->
+               forward and every plate read silently dies. NOTE: this is the RF occluder,
+               NOT the arm collision box (that lives in model.sdf and was pulled back for
+               reachability). The two are independent - do not reconcile them. -->
           <occluder>
             <name>rack_body</name>
             <model>calibration_plate_model</model>
@@ -319,7 +310,9 @@
          Names must equal the keys in calibration_fixture.yaml exactly - the recorder
          keys on EPC, so a mismatch contributes nothing to sigma_off rather than erroring.
          yaw -1.5708 matches the rack, putting each box's 0.004 m thin axis along world X
-         (the plate normal) and its 0.06 m width along world Y. -->
+         (the plate normal) and its 0.06 m width along world Y.
+         FLUSH: world x = 1.4845, on the plate face. They are not proud; the arm reaches
+         them because model.sdf's collision box was pulled back, not because they stand off. -->
 
     <model name="rfid_tag_plate_l_top">
       <static>true</static>
