@@ -1,0 +1,513 @@
+<?xml version="1.0"?>
+<!--
+  server_rack_8 — partially populated / mid-commissioning 42U rack.
+
+  Same equipment as server_rack_4, but the tag column is MIRRORED to local
+  x = -0.18 (the viewer's left from the aisle) and the EPC block is E200-8xxx.
+  Target: Gazebo Ignition Fortress (ign-gazebo 6.x) / ROS 2 Humble.
+
+  See server_rack_1/model.sdf for the shared conventions (frame geometry, tag
+  placement, why nested models are used, and what the including world must do).
+  Only the differences are documented here.
+
+  ===== U-map (1 RU = 44.45 mm)
+    U1-U4    ups                 4RU UPS
+    U5       pdu                 1RU PDU
+    U6       - EMPTY (1U) -
+    U7-U8    switch_1            2RU network switch
+    U9       firewall            1RU
+    U10      - EMPTY (1U) -
+    U11-U12  patch_panel_1       2RU copper patch panel
+    U13      cable_manager_1     1RU horizontal cable manager
+    U14-U17  - EMPTY (4U) -
+    U18-U27  blade_chassis       10RU blade enclosure, 0.78 m deep
+    U28      - EMPTY (1U) -
+    U29-U30  server_1            2RU server
+    U31-U32  server_2
+    U33-U38  - EMPTY (6U) -
+    U39      console_server      1RU
+    U40      - EMPTY (1U) -
+    U41      - EMPTY (1U) -
+    U42      kvm                 1RU KVM console
+  27U occupied, 15U empty across six gaps, 11 tags.
+
+  ===== Why this rack matters
+  The inverse of rack 2. Tag spacing is large (the U28 gap alone puts 0.31 m
+  between the blade chassis tag and server_1), so read-to-shelf attribution is
+  easy. What is hard is the negative space: 15U of the rack is genuinely empty,
+  with no link and no tag. An estimator that reads "no detection" as "present
+  but occluded" will over-report inventory here, and no amount of occluder
+  tuning fixes that — it needs an asset manifest to score against. See
+  models/rack_tag_manifest.csv.
+
+  Note also that <report_n_tags> in the RfidReader config leaks the true tag
+  count. With 11 tags here against 23 in rack 2, an estimator quietly relying
+  on that number will post a much better score on this rack than its actual
+  inference deserves. Flip report_n_tags to false before drawing any
+  cross-rack conclusions.
+-->
+<sdf version="1.9">
+  <model name="server_rack_8">
+    <static>true</static>
+
+    <!-- ===================== FRAME ===================== -->
+
+    <link name="frame_side_left">
+      <pose>-0.29 0 1.0 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.02 1.07 2.0</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.02 1.07 2.0</size></box></geometry>
+        <material>
+          <ambient>0.15 0.15 0.15 1</ambient>
+          <diffuse>0.15 0.15 0.15 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <link name="frame_side_right">
+      <pose>0.29 0 1.0 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.02 1.07 2.0</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.02 1.07 2.0</size></box></geometry>
+        <material>
+          <ambient>0.15 0.15 0.15 1</ambient>
+          <diffuse>0.15 0.15 0.15 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <link name="frame_top">
+      <pose>0 0 2.01 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.60 1.07 0.02</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.60 1.07 0.02</size></box></geometry>
+        <material>
+          <ambient>0.15 0.15 0.15 1</ambient>
+          <diffuse>0.15 0.15 0.15 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <link name="frame_plinth">
+      <pose>0 0 0.025 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.60 1.07 0.05</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.60 1.07 0.05</size></box></geometry>
+        <material>
+          <ambient>0.10 0.10 0.10 1</ambient>
+          <diffuse>0.10 0.10 0.10 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- ===================== EQUIPMENT ===================== -->
+
+    <!-- 4RU UPS, U1-U4 -->
+    <link name="ups">
+      <pose>0 -0.15 0.1389 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.70 0.1778</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.70 0.1778</size></box></geometry>
+        <material>
+          <ambient>0.08 0.08 0.10 1</ambient>
+          <diffuse>0.08 0.08 0.10 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 1RU PDU, U5 -->
+    <link name="pdu">
+      <pose>0 -0.29 0.2500 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.42 0.0444</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.42 0.0444</size></box></geometry>
+        <material>
+          <ambient>0.30 0.10 0.10 1</ambient>
+          <diffuse>0.30 0.10 0.10 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- U6 intentionally EMPTY -->
+
+    <!-- 2RU network switch 1, U7-U8 -->
+    <link name="switch_1">
+      <pose>0 -0.29 0.3612 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.42 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.42 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.16 0.20 0.30 1</ambient>
+          <diffuse>0.16 0.20 0.30 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 1RU firewall, U9 -->
+    <link name="firewall">
+      <pose>0 -0.29 0.4278 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.42 0.0444</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.42 0.0444</size></box></geometry>
+        <material>
+          <ambient>0.35 0.18 0.05 1</ambient>
+          <diffuse>0.35 0.18 0.05 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- U10 intentionally EMPTY -->
+
+    <!-- 2RU patch panel 1, U11-U12 -->
+    <link name="patch_panel_1">
+      <pose>0 -0.425 0.5390 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.15 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.15 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.35 0.35 0.35 1</ambient>
+          <diffuse>0.35 0.35 0.35 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 1RU cable manager 1, U13 -->
+    <link name="cable_manager_1">
+      <pose>0 -0.425 0.6056 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.15 0.0444</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.15 0.0444</size></box></geometry>
+        <material>
+          <ambient>0.22 0.22 0.22 1</ambient>
+          <diffuse>0.22 0.22 0.22 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- U14-U17 intentionally EMPTY -->
+
+    <!-- 10RU blade chassis, U18-U27 -->
+    <link name="blade_chassis">
+      <pose>0 -0.11 1.0279 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.78 0.4445</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.78 0.4445</size></box></geometry>
+        <material>
+          <ambient>0.14 0.10 0.16 1</ambient>
+          <diffuse>0.14 0.10 0.16 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- U28 intentionally EMPTY -->
+
+    <!-- 2RU server 1, U29-U30 -->
+    <link name="server_1">
+      <pose>0 -0.15 1.3391 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.10 0.10 0.12 1</ambient>
+          <diffuse>0.10 0.10 0.12 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU server 2, U31-U32 -->
+    <link name="server_2">
+      <pose>0 -0.15 1.4280 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.10 0.10 0.12 1</ambient>
+          <diffuse>0.10 0.10 0.12 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- U33-U38 intentionally EMPTY -->
+
+    <!-- 1RU console server, U39 -->
+    <link name="console_server">
+      <pose>0 -0.35 1.7613 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.30 0.0444</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.30 0.0444</size></box></geometry>
+        <material>
+          <ambient>0.20 0.28 0.20 1</ambient>
+          <diffuse>0.20 0.28 0.20 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- U40-U41 intentionally EMPTY -->
+
+    <!-- 1RU KVM console, U42 -->
+    <link name="kvm">
+      <pose>0 -0.29 1.8947 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.42 0.0444</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.42 0.0444</size></box></geometry>
+        <material>
+          <ambient>0.12 0.25 0.18 1</ambient>
+          <diffuse>0.12 0.25 0.18 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- ===================== RFID TAGS ===================== -->
+
+    <model name="rfid_tag_r8_ups">
+      <static>true</static>
+      <pose>-0.18 -0.503 0.1389 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-8001</address>
+        <topic>rfid/r8/tag_ups/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r8_pdu">
+      <static>true</static>
+      <pose>-0.18 -0.503 0.2500 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-8002</address>
+        <topic>rfid/r8/tag_pdu/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r8_switch_1">
+      <static>true</static>
+      <pose>-0.18 -0.503 0.3612 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-8003</address>
+        <topic>rfid/r8/tag_switch_1/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r8_firewall">
+      <static>true</static>
+      <pose>-0.18 -0.503 0.4278 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-8004</address>
+        <topic>rfid/r8/tag_firewall/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r8_patch_panel_1">
+      <static>true</static>
+      <pose>-0.18 -0.503 0.5390 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-8005</address>
+        <topic>rfid/r8/tag_patch_panel_1/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r8_cable_manager_1">
+      <static>true</static>
+      <pose>-0.18 -0.503 0.6056 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-8006</address>
+        <topic>rfid/r8/tag_cable_manager_1/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r8_blade_chassis">
+      <static>true</static>
+      <pose>-0.18 -0.503 1.0279 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-8007</address>
+        <topic>rfid/r8/tag_blade_chassis/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r8_server_1">
+      <static>true</static>
+      <pose>-0.18 -0.503 1.3391 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-8008</address>
+        <topic>rfid/r8/tag_server_1/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r8_server_2">
+      <static>true</static>
+      <pose>-0.18 -0.503 1.4280 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-8009</address>
+        <topic>rfid/r8/tag_server_2/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r8_console_server">
+      <static>true</static>
+      <pose>-0.18 -0.503 1.7613 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-800A</address>
+        <topic>rfid/r8/tag_console_server/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r8_kvm">
+      <static>true</static>
+      <pose>-0.18 -0.503 1.8947 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-800B</address>
+        <topic>rfid/r8/tag_kvm/rx</topic>
+      </plugin>
+    </model>
+
+  </model>
+</sdf>
