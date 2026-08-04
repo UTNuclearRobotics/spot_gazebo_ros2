@@ -30,6 +30,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "rclcpp/rclcpp.hpp"
 
+#include <array>
+#include <cmath>
+#include <limits>
+
 #include <champ_msgs/msg/joints.hpp>
 #include <champ_msgs/msg/pose.hpp>
 #include <champ_msgs/msg/point_array.hpp>
@@ -79,6 +83,9 @@ class QuadrupedController: public rclcpp::Node
     bool publish_joint_states_;
     bool publish_joint_control_;
     bool in_gazebo_;
+
+    double loop_period_;
+    std::array<float, 12> last_valid_joints_;
 
     void controlLoop_();
     

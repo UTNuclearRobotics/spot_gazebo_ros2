@@ -91,10 +91,18 @@ QuadrupedController::QuadrupedController():
     base_.setGaitConfig(gait_config_);
     champ::URDF::loadFromFile(base_, this->get_node_parameters_interface(), urdf);
     joint_names_ = champ::URDF::getJointNames(this->get_node_parameters_interface());
-    std::chrono::milliseconds period(static_cast<int>(1000/loop_rate));
 
-    loop_timer_ = this->create_wall_timer(
-         std::chrono::duration_cast<std::chrono::milliseconds>(period), std::bind(&QuadrupedController::controlLoop_, this));
+    loop_period_ = 1.0 / loop_rate;
+    last_valid_joints_.fill(std::numeric_limits<float>::quiet_NaN());
+
+    // Drive the control loop off the node clock (sim time when use_sim_time
+    // is set) instead of a wall timer. The gait phase generator samples sim
+    // time, so a wall timer decouples command emission from gait phase
+    // whenever the real-time factor dips or jitters, producing leg stutter.
+    loop_timer_ = rclcpp::create_timer(
+        this, this->get_clock(),
+        rclcpp::Duration::from_seconds(loop_period_),
+        std::bind(&QuadrupedController::controlLoop_, this));
     req_pose_.position.z = gait_config_.nominal_height;
 }
 
@@ -104,10 +112,43 @@ void QuadrupedController::controlLoop_()
     geometry::Transformation target_foot_positions[4];
     bool foot_contacts[4];
 
+    // Seed with the last valid command: Kinematics::inverse returns early
+    // without writing the output array when a foot target is unreachable or
+    // produces NaN, which previously published uninitialized stack memory.
+    for(size_t i = 0; i < 12; i++)
+    {
+        target_joint_positions[i] = last_valid_joints_[i];
+    }
+
     body_controller_.poseCommand(target_foot_positions, req_pose_);
 
     leg_controller_.velocityCommand(target_foot_positions, req_vel_, rosTimeToChampTime(clock_.now()));
     kinematics_.inverse(target_joint_positions, target_foot_positions);
+
+    bool valid = true;
+    for(size_t i = 0; i < 12; i++)
+    {
+        if(std::isnan(target_joint_positions[i]))
+        {
+            valid = false;
+            break;
+        }
+    }
+
+    if(!valid)
+    {
+        // No valid command yet (IK failed before any successful solve) —
+        // publishing would command NaN/garbage. Skip this cycle.
+        RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
+            "IK produced no valid joint targets; skipping joint command this cycle");
+        publishFootContacts_(foot_contacts);
+        return;
+    }
+
+    for(size_t i = 0; i < 12; i++)
+    {
+        last_valid_joints_[i] = target_joint_positions[i];
+    }
 
     publishFootContacts_(foot_contacts);
     publishJoints_(target_joint_positions);
@@ -156,7 +197,11 @@ void QuadrupedController::publishJoints_(float target_joints[12])
         trajectory_msgs::msg::JointTrajectoryPoint point;
         point.positions.resize(12);
 
-        point.time_from_start = rclcpp::Duration::from_seconds(1.0 / 60.0);
+        // Match the goal duration to the publish period. The previous value
+        // (1/60 s) meant each 5 ms a fresh 16.7 ms ramp was restarted from the
+        // current position, so joints only ever traversed the start of each
+        // ramp and permanently lagged their targets.
+        point.time_from_start = rclcpp::Duration::from_seconds(loop_period_);
         for(size_t i = 0; i < 12; i++)
         {
             point.positions[i] = target_joints[i];

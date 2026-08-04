@@ -20,6 +20,7 @@ Panels:
         - /Calibration1/Calibration Poses1/Topic1
         - /Inventory Discovery1
         - /Inventory Discovery1/PointCloud21/Topic1
+        - /Inventory Discovery1/PoseArray1
         - /Inventory Discovery1/PoseArray2/Topic1
       Splitter Ratio: 0.4715718924999237
     Tree Height: 664
@@ -82,21 +83,10 @@ Visualization Manager:
             Expand Link Details: false
             Expand Tree: false
             Link Tree Style: Links in Alphabetic Order
-            alpha_counter_enclosure_base:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-              Value: true
             alpha_detector:
               Alpha: 1
               Show Axes: false
               Show Trail: false
-              Value: true
-            alpha_detector_mount:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-              Value: true
             alpha_detector_sensing_frame:
               Alpha: 1
               Show Axes: false
@@ -162,6 +152,10 @@ Visualization Manager:
               Show Axes: false
               Show Trail: false
               Value: true
+            barcode_scanner:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
             base_link:
               Alpha: 1
               Show Axes: false
@@ -261,68 +255,6 @@ Visualization Manager:
               Alpha: 1
               Show Axes: false
               Show Trail: false
-            realsense_accel_frame:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            realsense_accel_optical_frame:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            realsense_bottom_screw_frame:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            realsense_color_frame:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            realsense_color_optical_frame:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            realsense_depth_frame:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            realsense_depth_optical_frame:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            realsense_gyro_frame:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            realsense_gyro_optical_frame:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            realsense_infra1_frame:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            realsense_infra1_optical_frame:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            realsense_infra2_frame:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            realsense_infra2_optical_frame:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            realsense_link:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-              Value: true
-            realsense_mount:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-              Value: true
             rear_left_ee:
               Alpha: 1
               Show Axes: false
@@ -385,6 +317,16 @@ Visualization Manager:
               Show Axes: false
               Show Trail: false
             rl_kit_wire_housing_box:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            scanner_assembly:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            spot_gripper_mount:
               Alpha: 1
               Show Axes: false
               Show Trail: false
@@ -536,21 +478,10 @@ Visualization Manager:
               Expand Link Details: false
               Expand Tree: false
               Link Tree Style: Links in Alphabetic Order
-              alpha_counter_enclosure_base:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
               alpha_detector:
                 Alpha: 1
                 Show Axes: false
                 Show Trail: false
-                Value: true
-              alpha_detector_mount:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
               alpha_detector_sensing_frame:
                 Alpha: 1
                 Show Axes: false
@@ -616,6 +547,10 @@ Visualization Manager:
                 Show Axes: false
                 Show Trail: false
                 Value: true
+              barcode_scanner:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
               base_link:
                 Alpha: 1
                 Show Axes: false
@@ -715,68 +650,6 @@ Visualization Manager:
                 Alpha: 1
                 Show Axes: false
                 Show Trail: false
-              realsense_accel_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_accel_optical_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_bottom_screw_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_color_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_color_optical_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_depth_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_depth_optical_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_gyro_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_gyro_optical_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_infra1_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_infra1_optical_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_infra2_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_infra2_optical_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_link:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              realsense_mount:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
               rear_left_ee:
                 Alpha: 1
                 Show Axes: false
@@ -839,6 +712,16 @@ Visualization Manager:
                 Show Axes: false
                 Show Trail: false
               rl_kit_wire_housing_box:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              scanner_assembly:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              spot_gripper_mount:
                 Alpha: 1
                 Show Axes: false
                 Show Trail: false
@@ -1536,7 +1419,7 @@ Visualization Manager:
             Filter size: 10
             History Policy: Keep Last
             Reliability Policy: Reliable
-            Value: /rfid_survey_behavior_tree/scan_path
+            Value: /barcode_calibration_poses/all
           Value: true
         - Alpha: 1
           Arrow Length: 0.30000001192092896
@@ -1607,25 +1490,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 2.755272388458252
+      Distance: 2.0927441120147705
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 1.0124754905700684
-        Y: -0.4438984990119934
-        Z: 1.3926808151154546e-07
+        X: 1.444115161895752
+        Y: -0.0801425576210022
+        Z: 2.005879196076421e-08
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.33479657769203186
+      Pitch: 0.3397968113422394
       Target Frame: survey
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 3.9192144870758057
+      Yaw: 4.264218807220459
     Saved: ~
 Window Geometry:
   Displays:

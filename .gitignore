@@ -33,3 +33,5 @@ log
 *.exe
 *.out
 *.app
+
+spot_gazebo/models/barcode_labels/materials

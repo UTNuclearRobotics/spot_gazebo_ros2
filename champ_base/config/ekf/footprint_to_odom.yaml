@@ -1,9 +1,11 @@
 footprint_to_odom_ekf:
   ros__parameters:
-    frequency: 50.0
+    # See base_to_footprint.yaml — lowered from 50 for high-RTF operation.
+    frequency: 30.0
     publish_tf: true
     transform_timeout: 0.01
-    # transform_time_offset: 0.05
+    # Future-date odom TF to bridge inter-cycle gaps at high RTF.
+    transform_time_offset: 0.15
     two_d_mode: true
     # diagnostics_agg: true
 

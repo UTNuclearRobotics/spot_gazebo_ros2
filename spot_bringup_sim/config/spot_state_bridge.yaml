@@ -1,0 +1,75 @@
+# Low-latency control/state bridge.
+#
+# These topics form the robot's control loop: joint commands out, joint states
+# and odometry back. They are small, high-rate messages whose delivery latency
+# directly affects gait stability and TF consistency, so they get their own
+# parameter_bridge process (see state_bridge in spot.gazebo.launch.py) —
+# isolated from the sensor bridge (spot_bridge.yaml) whose pointcloud/image
+# serialization made them arrive in bursts, and from the clock bridge for the
+# same reason. Do NOT add bulky sensor topics here.
+
+# Joint commands (CHAMP quadruped_controller -> gz JointTrajectoryController)
+- ros_topic_name: "/spot/joint_trajectory"
+  gz_topic_name: "/model/spot/joint_trajectory"
+  ros_type_name: "trajectory_msgs/msg/JointTrajectory"
+  gz_type_name: "ignition.msgs.JointTrajectory"
+  direction: ROS_TO_GZ
+
+# Joint states (gz JointStatePublisher, 200 Hz). /spot_driver/joint_states is
+# the hardware topic name (consumed by move_group, RSP, CHAMP state estimation).
+- ros_topic_name: "/spot_driver/joint_states"
+  gz_topic_name: "/model/spot/joint_state"
+  ros_type_name: "sensor_msgs/msg/JointState"
+  gz_type_name: "ignition.msgs.Model"
+  direction: GZ_TO_ROS
+
+# Odometry (gz OdometryPublisher, 100 Hz — rate set in model.sdf.xacro).
+- ros_topic_name: "/spot_driver/odometry"
+  gz_topic_name: "/model/spot/odometry"
+  ros_type_name: "nav_msgs/msg/Odometry"
+  gz_type_name: "ignition.msgs.Odometry"
+  direction: GZ_TO_ROS
+
+# IMU (no hardware ROS equivalent; internal to sim state estimation).
+# Lives here rather than the sensor bridge because both robot_localization
+# EKFs fuse it — bursty delivery skews their update timing.
+- ros_topic_name: "/imu/data"
+  gz_topic_name: "/model/spot/imu"
+  ros_type_name: "sensor_msgs/msg/Imu"
+  gz_type_name: "ignition.msgs.IMU"
+  direction: GZ_TO_ROS
+
+
+# Barcode scanner (Zebra Symbol LS2208).
+#
+# /barcode/scans carries one JSON report per scan at the scanner's 100
+# scans/sec, but only while the trigger is held AND no decode has landed yet
+# this pull. Reports stop both when the trigger is released and when the
+# single-decode latch closes, and the topic cannot tell you which. Silence
+# means "not scanning"; an empty "decoded" list means "scanning and resolving
+# nothing", which is real evidence — do not filter it out. Track
+# /barcode/trigger alongside this if you need to disambiguate.
+#
+# "decoded" holds AT MOST ONE entry. Unlike /rfid/reads, which enumerated every
+# tag in the lobe each cycle, this is a single-symbol input device. Consumers
+# written against the RFID list semantics need reworking, not just retopicking.
+- ros_topic_name: "/barcode/scans"
+  gz_topic_name: "/barcode/scans"
+  ros_type_name: "std_msgs/msg/String"
+  gz_type_name: "ignition.msgs.StringMsg"
+  direction: GZ_TO_ROS
+- ros_topic_name: "/tf"
+  gz_topic_name: "/barcode/tf"
+  ros_type_name: "tf2_msgs/msg/TFMessage"
+  gz_type_name: "ignition.msgs.Pose_V"
+  direction: GZ_TO_ROS
+# Trigger pull/release and mode switching. Replaces /rfid/set_power: there is
+# no power knob on a laser scanner, so the survey strategy that swept power to
+# localize tags has no analogue and must become an aiming strategy.
+#   {"trigger":true} / {"trigger":false}
+#   {"mode":"presentation"} / {"mode":"trigger"}
+- ros_topic_name: "/barcode/trigger"
+  gz_topic_name: "/barcode/trigger"
+  ros_type_name: "std_msgs/msg/String"
+  gz_type_name: "ignition.msgs.StringMsg"
+  direction: ROS_TO_GZ

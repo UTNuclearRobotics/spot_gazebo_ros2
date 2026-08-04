@@ -1,0 +1,916 @@
+<?xml version="1.0"?>
+<!--
+  server_rack_6 — dense compute 42U rack.
+
+  Same equipment as server_rack_2, but the tag column is MIRRORED to local
+  x = -0.18 (the viewer's left from the aisle) and the EPC block is E200-6xxx.
+  Target: Gazebo Ignition Fortress (ign-gazebo 6.x) / ROS 2 Humble.
+
+  See server_rack_1/model.sdf for the shared conventions (frame geometry, tag
+  placement, why nested models are used, and what the including world must do).
+  Only the differences are documented here.
+
+  ===== U-map (1 RU = 44.45 mm)
+    U1-U4    ups                 4RU UPS
+    U5       pdu_1               1RU PDU (A feed)
+    U6-U7    switch_1            2RU ToR switch
+    U8-U9    switch_2            2RU ToR switch (redundant)
+    U10      cable_manager_1     1RU horizontal cable manager
+    U11-U12  server_1            2RU server
+    U13-U14  server_2
+    U15-U16  server_3
+    U17-U18  server_4
+    U19-U20  server_5
+    U21-U22  server_6
+    U23-U24  server_7
+    U25-U26  server_8
+    U27-U28  server_9
+    U29-U30  server_10
+    U31-U32  server_11
+    U33-U34  server_12
+    U35      cable_manager_2     1RU
+    U36-U37  server_13
+    U38-U39  server_14
+    U40      pdu_2               1RU PDU (B feed)
+    U41      firewall            1RU
+    U42      console_server      1RU
+  42U occupied, 0U empty, 23 tags.
+
+  The stress case for tag discrimination: U11-U34 is 12 identical 2RU servers
+  with no break, so adjacent tag centers are 88.9 mm apart with nothing to
+  distinguish them but z. A reader that resolves EPC but not shelf position
+  will look correct on rack 1 and fall over here.
+-->
+<sdf version="1.9">
+  <model name="server_rack_6">
+    <static>true</static>
+
+    <!-- ===================== FRAME ===================== -->
+
+    <link name="frame_side_left">
+      <pose>-0.29 0 1.0 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.02 1.07 2.0</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.02 1.07 2.0</size></box></geometry>
+        <material>
+          <ambient>0.15 0.15 0.15 1</ambient>
+          <diffuse>0.15 0.15 0.15 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <link name="frame_side_right">
+      <pose>0.29 0 1.0 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.02 1.07 2.0</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.02 1.07 2.0</size></box></geometry>
+        <material>
+          <ambient>0.15 0.15 0.15 1</ambient>
+          <diffuse>0.15 0.15 0.15 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <link name="frame_top">
+      <pose>0 0 2.01 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.60 1.07 0.02</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.60 1.07 0.02</size></box></geometry>
+        <material>
+          <ambient>0.15 0.15 0.15 1</ambient>
+          <diffuse>0.15 0.15 0.15 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <link name="frame_plinth">
+      <pose>0 0 0.025 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.60 1.07 0.05</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.60 1.07 0.05</size></box></geometry>
+        <material>
+          <ambient>0.10 0.10 0.10 1</ambient>
+          <diffuse>0.10 0.10 0.10 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- ===================== EQUIPMENT ===================== -->
+
+    <!-- 4RU UPS, U1-U4 -->
+    <link name="ups">
+      <pose>0 -0.15 0.1389 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.70 0.1778</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.70 0.1778</size></box></geometry>
+        <material>
+          <ambient>0.08 0.08 0.10 1</ambient>
+          <diffuse>0.08 0.08 0.10 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 1RU PDU A feed, U5 -->
+    <link name="pdu_1">
+      <pose>0 -0.29 0.2500 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.42 0.0444</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.42 0.0444</size></box></geometry>
+        <material>
+          <ambient>0.30 0.10 0.10 1</ambient>
+          <diffuse>0.30 0.10 0.10 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU ToR switch 1, U6-U7 -->
+    <link name="switch_1">
+      <pose>0 -0.29 0.3167 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.42 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.42 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.16 0.20 0.30 1</ambient>
+          <diffuse>0.16 0.20 0.30 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU ToR switch 2 (redundant), U8-U9 -->
+    <link name="switch_2">
+      <pose>0 -0.29 0.4056 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.42 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.42 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.16 0.20 0.30 1</ambient>
+          <diffuse>0.16 0.20 0.30 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 1RU cable manager 1, U10 -->
+    <link name="cable_manager_1">
+      <pose>0 -0.425 0.4723 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.15 0.0444</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.15 0.0444</size></box></geometry>
+        <material>
+          <ambient>0.22 0.22 0.22 1</ambient>
+          <diffuse>0.22 0.22 0.22 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU server 1, U11-U12 -->
+    <link name="server_1">
+      <pose>0 -0.15 0.5390 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.10 0.10 0.12 1</ambient>
+          <diffuse>0.10 0.10 0.12 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU server 2, U13-U14 -->
+    <link name="server_2">
+      <pose>0 -0.15 0.6279 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.10 0.10 0.12 1</ambient>
+          <diffuse>0.10 0.10 0.12 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU server 3, U15-U16 -->
+    <link name="server_3">
+      <pose>0 -0.15 0.7168 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.10 0.10 0.12 1</ambient>
+          <diffuse>0.10 0.10 0.12 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU server 4, U17-U18 -->
+    <link name="server_4">
+      <pose>0 -0.15 0.8057 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.10 0.10 0.12 1</ambient>
+          <diffuse>0.10 0.10 0.12 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU server 5, U19-U20 -->
+    <link name="server_5">
+      <pose>0 -0.15 0.8946 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.10 0.10 0.12 1</ambient>
+          <diffuse>0.10 0.10 0.12 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU server 6, U21-U22 -->
+    <link name="server_6">
+      <pose>0 -0.15 0.9835 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.10 0.10 0.12 1</ambient>
+          <diffuse>0.10 0.10 0.12 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU server 7, U23-U24 -->
+    <link name="server_7">
+      <pose>0 -0.15 1.0724 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.10 0.10 0.12 1</ambient>
+          <diffuse>0.10 0.10 0.12 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU server 8, U25-U26 -->
+    <link name="server_8">
+      <pose>0 -0.15 1.1613 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.10 0.10 0.12 1</ambient>
+          <diffuse>0.10 0.10 0.12 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU server 9, U27-U28 -->
+    <link name="server_9">
+      <pose>0 -0.15 1.2502 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.10 0.10 0.12 1</ambient>
+          <diffuse>0.10 0.10 0.12 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU server 10, U29-U30 -->
+    <link name="server_10">
+      <pose>0 -0.15 1.3391 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.10 0.10 0.12 1</ambient>
+          <diffuse>0.10 0.10 0.12 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU server 11, U31-U32 -->
+    <link name="server_11">
+      <pose>0 -0.15 1.4280 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.10 0.10 0.12 1</ambient>
+          <diffuse>0.10 0.10 0.12 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU server 12, U33-U34 -->
+    <link name="server_12">
+      <pose>0 -0.15 1.5169 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.10 0.10 0.12 1</ambient>
+          <diffuse>0.10 0.10 0.12 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 1RU cable manager 2, U35 -->
+    <link name="cable_manager_2">
+      <pose>0 -0.425 1.5835 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.15 0.0444</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.15 0.0444</size></box></geometry>
+        <material>
+          <ambient>0.22 0.22 0.22 1</ambient>
+          <diffuse>0.22 0.22 0.22 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU server 13, U36-U37 -->
+    <link name="server_13">
+      <pose>0 -0.15 1.6502 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.10 0.10 0.12 1</ambient>
+          <diffuse>0.10 0.10 0.12 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU server 14, U38-U39 -->
+    <link name="server_14">
+      <pose>0 -0.15 1.7391 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.10 0.10 0.12 1</ambient>
+          <diffuse>0.10 0.10 0.12 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 1RU PDU B feed, U40 -->
+    <link name="pdu_2">
+      <pose>0 -0.29 1.8058 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.42 0.0444</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.42 0.0444</size></box></geometry>
+        <material>
+          <ambient>0.30 0.10 0.10 1</ambient>
+          <diffuse>0.30 0.10 0.10 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 1RU firewall, U41 -->
+    <link name="firewall">
+      <pose>0 -0.29 1.8502 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.42 0.0444</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.42 0.0444</size></box></geometry>
+        <material>
+          <ambient>0.35 0.18 0.05 1</ambient>
+          <diffuse>0.35 0.18 0.05 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 1RU console server, U42 -->
+    <link name="console_server">
+      <pose>0 -0.35 1.8947 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.30 0.0444</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.30 0.0444</size></box></geometry>
+        <material>
+          <ambient>0.20 0.28 0.20 1</ambient>
+          <diffuse>0.20 0.28 0.20 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- ===================== RFID TAGS ===================== -->
+
+    <model name="rfid_tag_r6_ups">
+      <static>true</static>
+      <pose>-0.18 -0.503 0.1389 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-6001</address>
+        <topic>rfid/r6/tag_ups/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r6_pdu_1">
+      <static>true</static>
+      <pose>-0.18 -0.503 0.2500 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-6002</address>
+        <topic>rfid/r6/tag_pdu_1/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r6_switch_1">
+      <static>true</static>
+      <pose>-0.18 -0.503 0.3167 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-6003</address>
+        <topic>rfid/r6/tag_switch_1/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r6_switch_2">
+      <static>true</static>
+      <pose>-0.18 -0.503 0.4056 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-6004</address>
+        <topic>rfid/r6/tag_switch_2/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r6_cable_manager_1">
+      <static>true</static>
+      <pose>-0.18 -0.503 0.4723 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-6005</address>
+        <topic>rfid/r6/tag_cable_manager_1/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r6_server_1">
+      <static>true</static>
+      <pose>-0.18 -0.503 0.5390 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-6006</address>
+        <topic>rfid/r6/tag_server_1/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r6_server_2">
+      <static>true</static>
+      <pose>-0.18 -0.503 0.6279 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-6007</address>
+        <topic>rfid/r6/tag_server_2/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r6_server_3">
+      <static>true</static>
+      <pose>-0.18 -0.503 0.7168 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-6008</address>
+        <topic>rfid/r6/tag_server_3/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r6_server_4">
+      <static>true</static>
+      <pose>-0.18 -0.503 0.8057 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-6009</address>
+        <topic>rfid/r6/tag_server_4/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r6_server_5">
+      <static>true</static>
+      <pose>-0.18 -0.503 0.8946 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-600A</address>
+        <topic>rfid/r6/tag_server_5/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r6_server_6">
+      <static>true</static>
+      <pose>-0.18 -0.503 0.9835 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-600B</address>
+        <topic>rfid/r6/tag_server_6/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r6_server_7">
+      <static>true</static>
+      <pose>-0.18 -0.503 1.0724 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-600C</address>
+        <topic>rfid/r6/tag_server_7/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r6_server_8">
+      <static>true</static>
+      <pose>-0.18 -0.503 1.1613 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-600D</address>
+        <topic>rfid/r6/tag_server_8/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r6_server_9">
+      <static>true</static>
+      <pose>-0.18 -0.503 1.2502 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-600E</address>
+        <topic>rfid/r6/tag_server_9/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r6_server_10">
+      <static>true</static>
+      <pose>-0.18 -0.503 1.3391 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-600F</address>
+        <topic>rfid/r6/tag_server_10/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r6_server_11">
+      <static>true</static>
+      <pose>-0.18 -0.503 1.4280 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-6010</address>
+        <topic>rfid/r6/tag_server_11/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r6_server_12">
+      <static>true</static>
+      <pose>-0.18 -0.503 1.5169 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-6011</address>
+        <topic>rfid/r6/tag_server_12/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r6_cable_manager_2">
+      <static>true</static>
+      <pose>-0.18 -0.503 1.5835 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-6012</address>
+        <topic>rfid/r6/tag_cable_manager_2/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r6_server_13">
+      <static>true</static>
+      <pose>-0.18 -0.503 1.6502 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-6013</address>
+        <topic>rfid/r6/tag_server_13/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r6_server_14">
+      <static>true</static>
+      <pose>-0.18 -0.503 1.7391 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-6014</address>
+        <topic>rfid/r6/tag_server_14/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r6_pdu_2">
+      <static>true</static>
+      <pose>-0.18 -0.503 1.8058 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-6015</address>
+        <topic>rfid/r6/tag_pdu_2/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r6_firewall">
+      <static>true</static>
+      <pose>-0.18 -0.503 1.8502 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-6016</address>
+        <topic>rfid/r6/tag_firewall/rx</topic>
+      </plugin>
+    </model>
+
+    <model name="rfid_tag_r6_console_server">
+      <static>true</static>
+      <pose>-0.18 -0.503 1.8947 0 0 0</pose>
+      <link name="tag_link">
+        <visual name="visual">
+          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <plugin
+          filename="ignition-gazebo-comms-endpoint-system"
+          name="ignition::gazebo::systems::CommsEndpoint">
+        <address>E200-6017</address>
+        <topic>rfid/r6/tag_console_server/rx</topic>
+      </plugin>
+    </model>
+
+  </model>
+</sdf>

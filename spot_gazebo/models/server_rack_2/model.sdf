@@ -31,7 +31,7 @@
     U40      pdu_2               1RU PDU (B feed)
     U41      firewall            1RU
     U42      console_server      1RU
-  42U occupied, 0U empty, 23 tags.
+  42U occupied, 0U empty, 23 barcode labels.
 
   The stress case for tag discrimination: U11-U34 is 12 identical 2RU servers
   with no break, so adjacent tag centers are 88.9 mm apart with nothing to
@@ -449,464 +449,878 @@
 
     <!-- ===================== RFID TAGS ===================== -->
 
-    <model name="rfid_tag_r2_ups">
+    <!-- ups, U1-4 -->
+    <model name="barcode_label_031FB16">
       <static>true</static>
-      <pose>0.18 -0.503 0.1389 0 0 0</pose>
-      <link name="tag_link">
-        <visual name="visual">
-          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+      <pose>0.18 -0.5042 0.1389 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
           <material>
-            <ambient>0.1 0.8 0.1 1</ambient>
-            <diffuse>0.1 0.8 0.1 1</diffuse>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB16.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
           </material>
         </visual>
       </link>
-      <plugin
-          filename="ignition-gazebo-comms-endpoint-system"
-          name="ignition::gazebo::systems::CommsEndpoint">
-        <address>E200-2001</address>
-        <topic>rfid/r2/tag_ups/rx</topic>
-      </plugin>
     </model>
 
-    <model name="rfid_tag_r2_pdu_1">
+    <!-- pdu, U5-5 -->
+    <model name="barcode_label_031FB17">
       <static>true</static>
-      <pose>0.18 -0.503 0.2500 0 0 0</pose>
-      <link name="tag_link">
-        <visual name="visual">
-          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+      <pose>0.18 -0.5042 0.2500 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
           <material>
-            <ambient>0.1 0.8 0.1 1</ambient>
-            <diffuse>0.1 0.8 0.1 1</diffuse>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB17.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
           </material>
         </visual>
       </link>
-      <plugin
-          filename="ignition-gazebo-comms-endpoint-system"
-          name="ignition::gazebo::systems::CommsEndpoint">
-        <address>E200-2002</address>
-        <topic>rfid/r2/tag_pdu_1/rx</topic>
-      </plugin>
     </model>
 
-    <model name="rfid_tag_r2_switch_1">
+    <!-- switch, U6-7 -->
+    <model name="barcode_label_031FB18">
       <static>true</static>
-      <pose>0.18 -0.503 0.3167 0 0 0</pose>
-      <link name="tag_link">
-        <visual name="visual">
-          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+      <pose>0.18 -0.5042 0.3167 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
           <material>
-            <ambient>0.1 0.8 0.1 1</ambient>
-            <diffuse>0.1 0.8 0.1 1</diffuse>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB18.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
           </material>
         </visual>
       </link>
-      <plugin
-          filename="ignition-gazebo-comms-endpoint-system"
-          name="ignition::gazebo::systems::CommsEndpoint">
-        <address>E200-2003</address>
-        <topic>rfid/r2/tag_switch_1/rx</topic>
-      </plugin>
     </model>
 
-    <model name="rfid_tag_r2_switch_2">
+    <!-- switch, U8-9 -->
+    <model name="barcode_label_031FB19">
       <static>true</static>
-      <pose>0.18 -0.503 0.4056 0 0 0</pose>
-      <link name="tag_link">
-        <visual name="visual">
-          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+      <pose>0.18 -0.5042 0.4056 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
           <material>
-            <ambient>0.1 0.8 0.1 1</ambient>
-            <diffuse>0.1 0.8 0.1 1</diffuse>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB19.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
           </material>
         </visual>
       </link>
-      <plugin
-          filename="ignition-gazebo-comms-endpoint-system"
-          name="ignition::gazebo::systems::CommsEndpoint">
-        <address>E200-2004</address>
-        <topic>rfid/r2/tag_switch_2/rx</topic>
-      </plugin>
     </model>
 
-    <model name="rfid_tag_r2_cable_manager_1">
+    <!-- cable_manager, U10-10 -->
+    <model name="barcode_label_031FB1A">
       <static>true</static>
-      <pose>0.18 -0.503 0.4723 0 0 0</pose>
-      <link name="tag_link">
-        <visual name="visual">
-          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+      <pose>0.18 -0.5042 0.4723 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
           <material>
-            <ambient>0.1 0.8 0.1 1</ambient>
-            <diffuse>0.1 0.8 0.1 1</diffuse>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB1A.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
           </material>
         </visual>
       </link>
-      <plugin
-          filename="ignition-gazebo-comms-endpoint-system"
-          name="ignition::gazebo::systems::CommsEndpoint">
-        <address>E200-2005</address>
-        <topic>rfid/r2/tag_cable_manager_1/rx</topic>
-      </plugin>
     </model>
 
-    <model name="rfid_tag_r2_server_1">
+    <!-- server, U11-12 -->
+    <model name="barcode_label_031FB1B">
       <static>true</static>
-      <pose>0.18 -0.503 0.5390 0 0 0</pose>
-      <link name="tag_link">
-        <visual name="visual">
-          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+      <pose>0.18 -0.5042 0.5390 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
           <material>
-            <ambient>0.1 0.8 0.1 1</ambient>
-            <diffuse>0.1 0.8 0.1 1</diffuse>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB1B.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
           </material>
         </visual>
       </link>
-      <plugin
-          filename="ignition-gazebo-comms-endpoint-system"
-          name="ignition::gazebo::systems::CommsEndpoint">
-        <address>E200-2006</address>
-        <topic>rfid/r2/tag_server_1/rx</topic>
-      </plugin>
     </model>
 
-    <model name="rfid_tag_r2_server_2">
+    <!-- server, U13-14 -->
+    <model name="barcode_label_031FB1C">
       <static>true</static>
-      <pose>0.18 -0.503 0.6279 0 0 0</pose>
-      <link name="tag_link">
-        <visual name="visual">
-          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+      <pose>0.18 -0.5042 0.6279 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
           <material>
-            <ambient>0.1 0.8 0.1 1</ambient>
-            <diffuse>0.1 0.8 0.1 1</diffuse>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB1C.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
           </material>
         </visual>
       </link>
-      <plugin
-          filename="ignition-gazebo-comms-endpoint-system"
-          name="ignition::gazebo::systems::CommsEndpoint">
-        <address>E200-2007</address>
-        <topic>rfid/r2/tag_server_2/rx</topic>
-      </plugin>
     </model>
 
-    <model name="rfid_tag_r2_server_3">
+    <!-- server, U15-16 -->
+    <model name="barcode_label_031FB1D">
       <static>true</static>
-      <pose>0.18 -0.503 0.7168 0 0 0</pose>
-      <link name="tag_link">
-        <visual name="visual">
-          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+      <pose>0.18 -0.5042 0.7168 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
           <material>
-            <ambient>0.1 0.8 0.1 1</ambient>
-            <diffuse>0.1 0.8 0.1 1</diffuse>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB1D.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
           </material>
         </visual>
       </link>
-      <plugin
-          filename="ignition-gazebo-comms-endpoint-system"
-          name="ignition::gazebo::systems::CommsEndpoint">
-        <address>E200-2008</address>
-        <topic>rfid/r2/tag_server_3/rx</topic>
-      </plugin>
     </model>
 
-    <model name="rfid_tag_r2_server_4">
+    <!-- server, U17-18 -->
+    <model name="barcode_label_031FB1E">
       <static>true</static>
-      <pose>0.18 -0.503 0.8057 0 0 0</pose>
-      <link name="tag_link">
-        <visual name="visual">
-          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+      <pose>0.18 -0.5042 0.8057 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
           <material>
-            <ambient>0.1 0.8 0.1 1</ambient>
-            <diffuse>0.1 0.8 0.1 1</diffuse>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB1E.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
           </material>
         </visual>
       </link>
-      <plugin
-          filename="ignition-gazebo-comms-endpoint-system"
-          name="ignition::gazebo::systems::CommsEndpoint">
-        <address>E200-2009</address>
-        <topic>rfid/r2/tag_server_4/rx</topic>
-      </plugin>
     </model>
 
-    <model name="rfid_tag_r2_server_5">
+    <!-- server, U19-20 -->
+    <model name="barcode_label_031FB1F">
       <static>true</static>
-      <pose>0.18 -0.503 0.8946 0 0 0</pose>
-      <link name="tag_link">
-        <visual name="visual">
-          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+      <pose>0.18 -0.5042 0.8946 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
           <material>
-            <ambient>0.1 0.8 0.1 1</ambient>
-            <diffuse>0.1 0.8 0.1 1</diffuse>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB1F.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
           </material>
         </visual>
       </link>
-      <plugin
-          filename="ignition-gazebo-comms-endpoint-system"
-          name="ignition::gazebo::systems::CommsEndpoint">
-        <address>E200-200A</address>
-        <topic>rfid/r2/tag_server_5/rx</topic>
-      </plugin>
     </model>
 
-    <model name="rfid_tag_r2_server_6">
+    <!-- server, U21-22 -->
+    <model name="barcode_label_031FB20">
       <static>true</static>
-      <pose>0.18 -0.503 0.9835 0 0 0</pose>
-      <link name="tag_link">
-        <visual name="visual">
-          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+      <pose>0.18 -0.5042 0.9835 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
           <material>
-            <ambient>0.1 0.8 0.1 1</ambient>
-            <diffuse>0.1 0.8 0.1 1</diffuse>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB20.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
           </material>
         </visual>
       </link>
-      <plugin
-          filename="ignition-gazebo-comms-endpoint-system"
-          name="ignition::gazebo::systems::CommsEndpoint">
-        <address>E200-200B</address>
-        <topic>rfid/r2/tag_server_6/rx</topic>
-      </plugin>
     </model>
 
-    <model name="rfid_tag_r2_server_7">
+    <!-- server, U23-24 -->
+    <model name="barcode_label_031FB21">
       <static>true</static>
-      <pose>0.18 -0.503 1.0724 0 0 0</pose>
-      <link name="tag_link">
-        <visual name="visual">
-          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+      <pose>0.18 -0.5042 1.0724 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
           <material>
-            <ambient>0.1 0.8 0.1 1</ambient>
-            <diffuse>0.1 0.8 0.1 1</diffuse>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB21.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
           </material>
         </visual>
       </link>
-      <plugin
-          filename="ignition-gazebo-comms-endpoint-system"
-          name="ignition::gazebo::systems::CommsEndpoint">
-        <address>E200-200C</address>
-        <topic>rfid/r2/tag_server_7/rx</topic>
-      </plugin>
     </model>
 
-    <model name="rfid_tag_r2_server_8">
+    <!-- server, U25-26 -->
+    <model name="barcode_label_031FB22">
       <static>true</static>
-      <pose>0.18 -0.503 1.1613 0 0 0</pose>
-      <link name="tag_link">
-        <visual name="visual">
-          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+      <pose>0.18 -0.5042 1.1613 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
           <material>
-            <ambient>0.1 0.8 0.1 1</ambient>
-            <diffuse>0.1 0.8 0.1 1</diffuse>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB22.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
           </material>
         </visual>
       </link>
-      <plugin
-          filename="ignition-gazebo-comms-endpoint-system"
-          name="ignition::gazebo::systems::CommsEndpoint">
-        <address>E200-200D</address>
-        <topic>rfid/r2/tag_server_8/rx</topic>
-      </plugin>
     </model>
 
-    <model name="rfid_tag_r2_server_9">
+    <!-- server, U27-28 -->
+    <model name="barcode_label_031FB23">
       <static>true</static>
-      <pose>0.18 -0.503 1.2502 0 0 0</pose>
-      <link name="tag_link">
-        <visual name="visual">
-          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+      <pose>0.18 -0.5042 1.2502 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
           <material>
-            <ambient>0.1 0.8 0.1 1</ambient>
-            <diffuse>0.1 0.8 0.1 1</diffuse>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB23.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
           </material>
         </visual>
       </link>
-      <plugin
-          filename="ignition-gazebo-comms-endpoint-system"
-          name="ignition::gazebo::systems::CommsEndpoint">
-        <address>E200-200E</address>
-        <topic>rfid/r2/tag_server_9/rx</topic>
-      </plugin>
     </model>
 
-    <model name="rfid_tag_r2_server_10">
+    <!-- server, U29-30 -->
+    <model name="barcode_label_031FB24">
       <static>true</static>
-      <pose>0.18 -0.503 1.3391 0 0 0</pose>
-      <link name="tag_link">
-        <visual name="visual">
-          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+      <pose>0.18 -0.5042 1.3391 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
           <material>
-            <ambient>0.1 0.8 0.1 1</ambient>
-            <diffuse>0.1 0.8 0.1 1</diffuse>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB24.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
           </material>
         </visual>
       </link>
-      <plugin
-          filename="ignition-gazebo-comms-endpoint-system"
-          name="ignition::gazebo::systems::CommsEndpoint">
-        <address>E200-200F</address>
-        <topic>rfid/r2/tag_server_10/rx</topic>
-      </plugin>
     </model>
 
-    <model name="rfid_tag_r2_server_11">
+    <!-- server, U31-32 -->
+    <model name="barcode_label_031FB25">
       <static>true</static>
-      <pose>0.18 -0.503 1.4280 0 0 0</pose>
-      <link name="tag_link">
-        <visual name="visual">
-          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+      <pose>0.18 -0.5042 1.4280 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
           <material>
-            <ambient>0.1 0.8 0.1 1</ambient>
-            <diffuse>0.1 0.8 0.1 1</diffuse>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB25.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
           </material>
         </visual>
       </link>
-      <plugin
-          filename="ignition-gazebo-comms-endpoint-system"
-          name="ignition::gazebo::systems::CommsEndpoint">
-        <address>E200-2010</address>
-        <topic>rfid/r2/tag_server_11/rx</topic>
-      </plugin>
     </model>
 
-    <model name="rfid_tag_r2_server_12">
+    <!-- server, U33-34 -->
+    <model name="barcode_label_031FB26">
       <static>true</static>
-      <pose>0.18 -0.503 1.5169 0 0 0</pose>
-      <link name="tag_link">
-        <visual name="visual">
-          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+      <pose>0.18 -0.5042 1.5169 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
           <material>
-            <ambient>0.1 0.8 0.1 1</ambient>
-            <diffuse>0.1 0.8 0.1 1</diffuse>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB26.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
           </material>
         </visual>
       </link>
-      <plugin
-          filename="ignition-gazebo-comms-endpoint-system"
-          name="ignition::gazebo::systems::CommsEndpoint">
-        <address>E200-2011</address>
-        <topic>rfid/r2/tag_server_12/rx</topic>
-      </plugin>
     </model>
 
-    <model name="rfid_tag_r2_cable_manager_2">
+    <!-- cable_manager, U35-35 -->
+    <model name="barcode_label_031FB27">
       <static>true</static>
-      <pose>0.18 -0.503 1.5835 0 0 0</pose>
-      <link name="tag_link">
-        <visual name="visual">
-          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+      <pose>0.18 -0.5042 1.5835 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
           <material>
-            <ambient>0.1 0.8 0.1 1</ambient>
-            <diffuse>0.1 0.8 0.1 1</diffuse>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB27.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
           </material>
         </visual>
       </link>
-      <plugin
-          filename="ignition-gazebo-comms-endpoint-system"
-          name="ignition::gazebo::systems::CommsEndpoint">
-        <address>E200-2012</address>
-        <topic>rfid/r2/tag_cable_manager_2/rx</topic>
-      </plugin>
     </model>
 
-    <model name="rfid_tag_r2_server_13">
+    <!-- server, U36-37 -->
+    <model name="barcode_label_031FB28">
       <static>true</static>
-      <pose>0.18 -0.503 1.6502 0 0 0</pose>
-      <link name="tag_link">
-        <visual name="visual">
-          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+      <pose>0.18 -0.5042 1.6502 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
           <material>
-            <ambient>0.1 0.8 0.1 1</ambient>
-            <diffuse>0.1 0.8 0.1 1</diffuse>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB28.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
           </material>
         </visual>
       </link>
-      <plugin
-          filename="ignition-gazebo-comms-endpoint-system"
-          name="ignition::gazebo::systems::CommsEndpoint">
-        <address>E200-2013</address>
-        <topic>rfid/r2/tag_server_13/rx</topic>
-      </plugin>
     </model>
 
-    <model name="rfid_tag_r2_server_14">
+    <!-- server, U38-39 -->
+    <model name="barcode_label_031FB29">
       <static>true</static>
-      <pose>0.18 -0.503 1.7391 0 0 0</pose>
-      <link name="tag_link">
-        <visual name="visual">
-          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+      <pose>0.18 -0.5042 1.7391 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
           <material>
-            <ambient>0.1 0.8 0.1 1</ambient>
-            <diffuse>0.1 0.8 0.1 1</diffuse>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB29.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
           </material>
         </visual>
       </link>
-      <plugin
-          filename="ignition-gazebo-comms-endpoint-system"
-          name="ignition::gazebo::systems::CommsEndpoint">
-        <address>E200-2014</address>
-        <topic>rfid/r2/tag_server_14/rx</topic>
-      </plugin>
     </model>
 
-    <model name="rfid_tag_r2_pdu_2">
+    <!-- pdu, U40-40 -->
+    <model name="barcode_label_031FB2A">
       <static>true</static>
-      <pose>0.18 -0.503 1.8058 0 0 0</pose>
-      <link name="tag_link">
-        <visual name="visual">
-          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+      <pose>0.18 -0.5042 1.8058 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
           <material>
-            <ambient>0.1 0.8 0.1 1</ambient>
-            <diffuse>0.1 0.8 0.1 1</diffuse>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB2A.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
           </material>
         </visual>
       </link>
-      <plugin
-          filename="ignition-gazebo-comms-endpoint-system"
-          name="ignition::gazebo::systems::CommsEndpoint">
-        <address>E200-2015</address>
-        <topic>rfid/r2/tag_pdu_2/rx</topic>
-      </plugin>
     </model>
 
-    <model name="rfid_tag_r2_firewall">
+    <!-- firewall, U41-41 -->
+    <model name="barcode_label_031FB2B">
       <static>true</static>
-      <pose>0.18 -0.503 1.8502 0 0 0</pose>
-      <link name="tag_link">
-        <visual name="visual">
-          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+      <pose>0.18 -0.5042 1.8502 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
           <material>
-            <ambient>0.1 0.8 0.1 1</ambient>
-            <diffuse>0.1 0.8 0.1 1</diffuse>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB2B.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
           </material>
         </visual>
       </link>
-      <plugin
-          filename="ignition-gazebo-comms-endpoint-system"
-          name="ignition::gazebo::systems::CommsEndpoint">
-        <address>E200-2016</address>
-        <topic>rfid/r2/tag_firewall/rx</topic>
-      </plugin>
     </model>
 
-    <model name="rfid_tag_r2_console_server">
+    <!-- console_server, U42-42 -->
+    <model name="barcode_label_031FB2C">
       <static>true</static>
-      <pose>0.18 -0.503 1.8947 0 0 0</pose>
-      <link name="tag_link">
-        <visual name="visual">
-          <geometry><box><size>0.06 0.004 0.025</size></box></geometry>
+      <pose>0.18 -0.5042 1.8947 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
           <material>
-            <ambient>0.1 0.8 0.1 1</ambient>
-            <diffuse>0.1 0.8 0.1 1</diffuse>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB2C.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
           </material>
         </visual>
       </link>
-      <plugin
-          filename="ignition-gazebo-comms-endpoint-system"
-          name="ignition::gazebo::systems::CommsEndpoint">
-        <address>E200-2017</address>
-        <topic>rfid/r2/tag_console_server/rx</topic>
-      </plugin>
     </model>
 
   </model>

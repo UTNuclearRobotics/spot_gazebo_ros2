@@ -34,8 +34,12 @@
         name="ignition::gazebo::systems::LogRecord">
     </plugin> -->
 
-    <!-- Required for the CommsEndpoint plugins carried by every tag model.
-         RfidReader itself is independent of it. -->
+    <!-- RFComms was required only by the CommsEndpoint plugins the RFID tag
+         models carried. The barcode labels that replaced them carry no
+         plugins at all — a printed label is passive geometry — so this world
+         no longer needs it. Left commented rather than deleted because
+         server_rack_rfid.sdf still depends on the same block.
+
     <plugin
         filename="ignition-gazebo-rf-comms-system"
         name="ignition::gazebo::systems::RFComms">
@@ -52,6 +56,7 @@
         <modulation>QPSK</modulation>
       </radio_config>
     </plugin>
+    -->
 
     <gui fullscreen="0">
       <plugin filename="MinimalScene" name="3D View">
@@ -325,138 +330,171 @@
             <uri>package://spot_description_sim/models/spot</uri>
         </include>
 
-        <plugin filename="RfidReader" name="rfid::RfidReader">
-          <reader_id>vulcan_iron</reader_id>
-          <tag_prefix>rfid_tag_</tag_prefix>
-          <update_rate>10</update_rate>
-          <multiplex>true</multiplex>
-          <max_range>1.0</max_range>
-          <pd_max>0.99</pd_max>
-          <topic>/rfid/reads</topic>
+        <!-- Zebra Symbol LS2208 1-D laser scanner, mounted where the RFID
+             antenna used to be. This world reads BARCODES; the RFID reader
+             worlds (server_rack_rfid.sdf, rfid_calibration.sdf) are unchanged
+             and still exercise RfidReader.
+
+             Datasheet: Motorola "Symbol LS2208 Specification Sheet",
+             SS-LS2208, 12/08 — the sheet for LS2208-SR20007R-UR.
+
+             VERBATIM FROM THE SHEET
+               update_rate      100 scans/sec typical
+               print_contrast   20% minimum reflective difference
+               roll_limit       +/- 30 deg
+               pitch_limit      +/- 65 deg
+               skew_limit       +/- 60 deg
+               dof_near/far     0.0381 - 0.2540 m, i.e. the Code 39 7.5 mil
+                                row (1.50" - 10.00") converted from the
+                                authoritative inch column. The sheet has no
+                                Code 128 row; depth of field follows the narrow
+                                element width, not the symbology.
+
+             SET BY OUR LABEL, AND THESE ARE THE ONES THAT ACTUALLY BIND
+               dof_near/dof_far 7.5 mil is forced by fitting a 7-hex-digit
+                                Code 128 symbol (132 modules incl. quiet
+                                zones) into the 28 mm print area. A 4x
+                                reduction from the RFID reader's 1.0 m
+                                max_range, and the single biggest behavioural
+                                change: the arm has to get within 25 cm.
+               auto_roll_limit  Derives roll from the printed symbol as
+                                atan((3.0 + 0.2) / 25.146) = 7.25 deg,
+                                overriding the sheet's +/-30 deg. Short bars,
+                                not the scanner, are the limit. Expect this to
+                                dominate aiming.
+
+             NOT IN THE DATASHEET — scan_halfangle, beam_spot and rescan_delay
+             are absent from both the 12/08 and 04/15 revisions. See the
+             "NOT IN THE DATASHEET" block in BarcodeScanner.cc before quoting
+             any of them as a specification. -->
+        <plugin filename="BarcodeScanner" name="barcode::BarcodeScanner">
+          <scanner_id>ls2208</scanner_id>
+          <label_prefix>barcode_label_</label_prefix>
+          <update_rate>100</update_rate>
+          <mode>trigger</mode>
+          <!-- UNVERIFIED: not a spec-sheet value. The re-read timeout is a
+               host-programmable parameter in the Product Reference Guide. -->
+          <rescan_delay>0.5</rescan_delay>
+          <topic>/barcode/scans</topic>
+          <trigger_topic>/barcode/trigger</trigger_topic>
           <seed>42</seed>
 
           <publish_tf>true</publish_tf>
-          <tf_topic>/rfid/tf</tf_topic>
-          <tf_position_noise_stddev>0.0</tf_position_noise_stddev>
+          <tf_topic>/barcode/tf</tf_topic>
 
-          <report_n_tags>true</report_n_tags>
+          <dof_near>0.0381</dof_near>
+          <dof_far>0.2540</dof_far>
+
+          <symbol_width>0.0252</symbol_width>
+          <symbol_height>0.003</symbol_height>
+          <!-- UNVERIFIED: no spot size is published. 0.2 mm is derived from
+               having to resolve one 7.5 mil narrow module (0.1905 mm). -->
+          <beam_spot>0.0002</beam_spot>
+
+          <!-- UNVERIFIED: the sheet states no scan angle. 35 deg total is the
+               figure commonly quoted for this scan engine, not a spec. -->
+          <scan_halfangle>17.5</scan_halfangle>
+          <auto_roll_limit>true</auto_roll_limit>
+          <roll_limit>30</roll_limit>
+          <pitch_limit>65</pitch_limit>
+          <skew_limit>60</skew_limit>
+          <specular_deadzone>0</specular_deadzone>
+
+          <print_contrast>0.20</print_contrast>
+          <label_contrast>0.85</label_contrast>
+
+          <p_decode_max>0.99</p_decode_max>
+          <margin_noise>0.05</margin_noise>
 
           <!-- One occluder per rack INSTANCE. <model> resolves by plain,
                unscoped name against each <include><name> below, not against
-               the included server_rack_N. Rename an include and attenuation
+               the included server_rack_N. Rename an include and occlusion
                stops with a single ignwarn. The pose is in the rack frame, so it
                follows each row's yaw; y = 0.035 insets the body 2 cm behind
-               the faceplate so a ray to a front tag grazes rather than clips.
-               Values are placeholders pending characterization Test E. -->
+               the faceplate so a ray to a front label grazes rather than clips.
+
+               No attenuation figures here, unlike the RfidReader blocks these
+               were converted from: 650 nm does not pass through a rack panel.
+               Any intersection blocks the beam outright, so these volumes are
+               now exact rather than placeholders pending Test E. -->
           <occluder>
             <name>rack_r0_c0</name><model>rack_r0_c0</model>
             <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-            <attenuation_db>3.0</attenuation_db>
-            <attenuation_db_per_m>30.0</attenuation_db_per_m>
           </occluder>
           <occluder>
             <name>rack_r0_c1</name><model>rack_r0_c1</model>
             <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-            <attenuation_db>3.0</attenuation_db>
-            <attenuation_db_per_m>30.0</attenuation_db_per_m>
           </occluder>
           <occluder>
             <name>rack_r0_c2</name><model>rack_r0_c2</model>
             <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-            <attenuation_db>3.0</attenuation_db>
-            <attenuation_db_per_m>30.0</attenuation_db_per_m>
           </occluder>
           <occluder>
             <name>rack_r0_c3</name><model>rack_r0_c3</model>
             <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-            <attenuation_db>3.0</attenuation_db>
-            <attenuation_db_per_m>30.0</attenuation_db_per_m>
           </occluder>
           <occluder>
             <name>rack_r1_c0</name><model>rack_r1_c0</model>
             <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-            <attenuation_db>3.0</attenuation_db>
-            <attenuation_db_per_m>30.0</attenuation_db_per_m>
           </occluder>
           <occluder>
             <name>rack_r1_c1</name><model>rack_r1_c1</model>
             <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-            <attenuation_db>3.0</attenuation_db>
-            <attenuation_db_per_m>30.0</attenuation_db_per_m>
           </occluder>
           <occluder>
             <name>rack_r1_c2</name><model>rack_r1_c2</model>
             <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-            <attenuation_db>3.0</attenuation_db>
-            <attenuation_db_per_m>30.0</attenuation_db_per_m>
           </occluder>
           <occluder>
             <name>rack_r1_c3</name><model>rack_r1_c3</model>
             <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-            <attenuation_db>3.0</attenuation_db>
-            <attenuation_db_per_m>30.0</attenuation_db_per_m>
           </occluder>
           <occluder>
             <name>rack_r2_c0</name><model>rack_r2_c0</model>
             <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-            <attenuation_db>3.0</attenuation_db>
-            <attenuation_db_per_m>30.0</attenuation_db_per_m>
           </occluder>
           <occluder>
             <name>rack_r2_c1</name><model>rack_r2_c1</model>
             <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-            <attenuation_db>3.0</attenuation_db>
-            <attenuation_db_per_m>30.0</attenuation_db_per_m>
           </occluder>
           <occluder>
             <name>rack_r2_c2</name><model>rack_r2_c2</model>
             <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-            <attenuation_db>3.0</attenuation_db>
-            <attenuation_db_per_m>30.0</attenuation_db_per_m>
           </occluder>
           <occluder>
             <name>rack_r2_c3</name><model>rack_r2_c3</model>
             <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-            <attenuation_db>3.0</attenuation_db>
-            <attenuation_db_per_m>30.0</attenuation_db_per_m>
           </occluder>
           <occluder>
             <name>rack_r3_c0</name><model>rack_r3_c0</model>
             <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-            <attenuation_db>3.0</attenuation_db>
-            <attenuation_db_per_m>30.0</attenuation_db_per_m>
           </occluder>
           <occluder>
             <name>rack_r3_c1</name><model>rack_r3_c1</model>
             <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-            <attenuation_db>3.0</attenuation_db>
-            <attenuation_db_per_m>30.0</attenuation_db_per_m>
           </occluder>
           <occluder>
             <name>rack_r3_c2</name><model>rack_r3_c2</model>
             <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-            <attenuation_db>3.0</attenuation_db>
-            <attenuation_db_per_m>30.0</attenuation_db_per_m>
           </occluder>
           <occluder>
             <name>rack_r3_c3</name><model>rack_r3_c3</model>
             <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-            <attenuation_db>3.0</attenuation_db>
-            <attenuation_db_per_m>30.0</attenuation_db_per_m>
           </occluder>
 
-          <!-- <pose> must stay equal to the offset in
-               rfid_inventory_tracking/urdf/rfid_antenna.xacro. -->
-          <antenna>
-            <name>hand</name>
-            <link>arm0_hand</link>
-            <pose>0.11873 0 -0.136 0 0 0</pose>
-            <r0>0.11</r0>
-            <delta_theta_h>80</delta_theta_h>
-            <delta_theta_v>80</delta_theta_v>
-            <rssi_r0>-45.0</rssi_r0>
-            <power_dbm>27.0</power_dbm>
-          </antenna>
+          <!-- Exit window. Inherited verbatim from the RFID antenna mount so
+               the arm kinematics and any cached scan poses stay valid, and it
+               is co-located with alpha_detector. Boresight is +X, the line
+               sweeps in scanner XY, bar height is along scanner Z — so the
+               scanner's Z axis must be roughly parallel to the label's short
+               axis or the roll gate above rejects everything.
+
+               <pose> must stay equal to the offset in
+               rfid_inventory_tracking/urdf/rfid_antenna.xacro (rename that to
+               barcode_scanner.xacro when the consumer package is migrated). -->
+          <link>arm0_hand</link>
+          <pose>0.10473 0.0049 -0.1117 0 0 0</pose>
+          <parent_frame>arm0_hand</parent_frame>
         </plugin>
     </model>
 
