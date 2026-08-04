@@ -1,0 +1,174 @@
+# GROUND-TRUTH ASSET MANIFEST for server_rack_1..8
+# Read with: pandas.read_csv(path, comment='#')
+# Generated from the model.sdf files in this directory. If you edit a rack, edit this too.
+# rack_model      : the <model name> that must NOT be renamed on <include> (the RfidReader
+#                   <occluder><model> lookup is by plain name, RfidReader.cc:528).
+#                   EXCEPTION: server_room.sdf renames on <include> to rack_rR_cC and names
+#                   its occluders after THAT, which is equivalent and is why it works.
+# tag_name        : the plain, unscoped model name RfidReader matches against <tag_prefix>
+#                   and reports as detections[i].tagName. NOT the EPC. This is the only
+#                   column that joins back to the SDF; 'equipment' is a type, not a link name.
+# epc             : the CommsEndpoint <address>, used only by the RFComms read path.
+#                   RfidReader is fully independent of it.
+# z_local_m       : tag z in the RACK frame. World z = rack pose z + this.
+# x_local_m       : tag x in the RACK frame, the tag COLUMN. +0.18 on racks 1-4, -0.18 on
+#                   racks 5-8, measured as the viewer's right/left from the aisle (the face
+#                   normal is local -Y, so an observer looks along +Y and local +X is their
+#                   right). Racks 5-8 exist to break the single-column assumption that
+#                   discovery_params.yaml tag_column still hard-codes; see Phase 5 of
+#                   rfid_inventory_tracking/doc/versatility_roadmap.md.
+#                   Tag y is always -0.503 (the tag is 4 mm thick, so it spans
+#                   y = -0.505..-0.501, entirely in front of the -0.50 faceplate plane).
+# Racks 5-8 carry the same equipment, U-map and z heights as 1-4 respectively; only the
+# model name, tag prefix, EPC block and tag column differ.
+# This file exists so the estimator can score non-detections against a manifest instead of
+# against the reader's own <report_n_tags> count, which leaks the answer.
+rack_model,tag_name,epc,equipment,u_start,u_end,u_size,depth_m,z_local_m,x_local_m
+server_rack_1,rfid_tag_r1_ups,E200-1001,ups,1,4,4,0.70,0.1389,0.18
+server_rack_1,rfid_tag_r1_pdu,E200-1002,pdu,5,5,1,0.42,0.2500,0.18
+server_rack_1,rfid_tag_r1_switch_1,E200-1003,switch,6,7,2,0.42,0.3167,0.18
+server_rack_1,rfid_tag_r1_patch_panel_1,E200-1004,patch_panel,8,9,2,0.15,0.4056,0.18
+server_rack_1,rfid_tag_r1_cable_manager_1,E200-1005,cable_manager,10,10,1,0.15,0.4723,0.18
+server_rack_1,rfid_tag_r1_switch_2,E200-1006,switch,11,12,2,0.42,0.5390,0.18
+server_rack_1,rfid_tag_r1_patch_panel_2,E200-1007,patch_panel,13,14,2,0.15,0.6279,0.18
+server_rack_1,rfid_tag_r1_cable_manager_2,E200-1008,cable_manager,15,15,1,0.15,0.6945,0.18
+server_rack_1,rfid_tag_r1_switch_3,E200-1009,switch,16,17,2,0.42,0.7612,0.18
+server_rack_1,rfid_tag_r1_patch_panel_3,E200-100A,patch_panel,18,19,2,0.15,0.8501,0.18
+server_rack_1,rfid_tag_r1_cable_manager_3,E200-100B,cable_manager,20,20,1,0.15,0.9168,0.18
+server_rack_1,rfid_tag_r1_switch_4,E200-100C,switch,21,22,2,0.42,0.9835,0.18
+server_rack_1,rfid_tag_r1_patch_panel_4,E200-100D,patch_panel,23,24,2,0.15,1.0724,0.18
+server_rack_1,rfid_tag_r1_cable_manager_4,E200-100E,cable_manager,25,25,1,0.15,1.1390,0.18
+server_rack_1,rfid_tag_r1_fiber_patch_panel,E200-100F,fiber_patch_panel,26,29,4,0.30,1.2502,0.18
+server_rack_1,rfid_tag_r1_server_1,E200-1010,server,30,31,2,0.70,1.3835,0.18
+server_rack_1,rfid_tag_r1_server_2,E200-1011,server,32,33,2,0.70,1.4724,0.18
+server_rack_1,rfid_tag_r1_server_3,E200-1012,server,34,35,2,0.70,1.5613,0.18
+server_rack_1,rfid_tag_r1_server_4,E200-1013,server,36,37,2,0.70,1.6502,0.18
+server_rack_1,rfid_tag_r1_server_5,E200-1014,server,38,39,2,0.70,1.7391,0.18
+server_rack_1,rfid_tag_r1_server_6,E200-1015,server,40,41,2,0.70,1.8280,0.18
+server_rack_1,rfid_tag_r1_kvm,E200-1016,kvm,42,42,1,0.42,1.8947,0.18
+server_rack_2,rfid_tag_r2_ups,E200-2001,ups,1,4,4,0.70,0.1389,0.18
+server_rack_2,rfid_tag_r2_pdu_1,E200-2002,pdu,5,5,1,0.42,0.2500,0.18
+server_rack_2,rfid_tag_r2_switch_1,E200-2003,switch,6,7,2,0.42,0.3167,0.18
+server_rack_2,rfid_tag_r2_switch_2,E200-2004,switch,8,9,2,0.42,0.4056,0.18
+server_rack_2,rfid_tag_r2_cable_manager_1,E200-2005,cable_manager,10,10,1,0.15,0.4723,0.18
+server_rack_2,rfid_tag_r2_server_1,E200-2006,server,11,12,2,0.70,0.5390,0.18
+server_rack_2,rfid_tag_r2_server_2,E200-2007,server,13,14,2,0.70,0.6279,0.18
+server_rack_2,rfid_tag_r2_server_3,E200-2008,server,15,16,2,0.70,0.7168,0.18
+server_rack_2,rfid_tag_r2_server_4,E200-2009,server,17,18,2,0.70,0.8057,0.18
+server_rack_2,rfid_tag_r2_server_5,E200-200A,server,19,20,2,0.70,0.8946,0.18
+server_rack_2,rfid_tag_r2_server_6,E200-200B,server,21,22,2,0.70,0.9835,0.18
+server_rack_2,rfid_tag_r2_server_7,E200-200C,server,23,24,2,0.70,1.0724,0.18
+server_rack_2,rfid_tag_r2_server_8,E200-200D,server,25,26,2,0.70,1.1613,0.18
+server_rack_2,rfid_tag_r2_server_9,E200-200E,server,27,28,2,0.70,1.2502,0.18
+server_rack_2,rfid_tag_r2_server_10,E200-200F,server,29,30,2,0.70,1.3391,0.18
+server_rack_2,rfid_tag_r2_server_11,E200-2010,server,31,32,2,0.70,1.4280,0.18
+server_rack_2,rfid_tag_r2_server_12,E200-2011,server,33,34,2,0.70,1.5169,0.18
+server_rack_2,rfid_tag_r2_cable_manager_2,E200-2012,cable_manager,35,35,1,0.15,1.5835,0.18
+server_rack_2,rfid_tag_r2_server_13,E200-2013,server,36,37,2,0.70,1.6502,0.18
+server_rack_2,rfid_tag_r2_server_14,E200-2014,server,38,39,2,0.70,1.7391,0.18
+server_rack_2,rfid_tag_r2_pdu_2,E200-2015,pdu,40,40,1,0.42,1.8058,0.18
+server_rack_2,rfid_tag_r2_firewall,E200-2016,firewall,41,41,1,0.42,1.8502,0.18
+server_rack_2,rfid_tag_r2_console_server,E200-2017,console_server,42,42,1,0.30,1.8947,0.18
+server_rack_3,rfid_tag_r3_ups,E200-3001,ups,1,4,4,0.70,0.1389,0.18
+server_rack_3,rfid_tag_r3_pdu,E200-3002,pdu,5,5,1,0.42,0.2500,0.18
+server_rack_3,rfid_tag_r3_san_switch_1,E200-3003,san_switch,6,7,2,0.42,0.3167,0.18
+server_rack_3,rfid_tag_r3_san_switch_2,E200-3004,san_switch,8,9,2,0.42,0.4056,0.18
+server_rack_3,rfid_tag_r3_cable_manager_1,E200-3005,cable_manager,10,10,1,0.15,0.4723,0.18
+server_rack_3,rfid_tag_r3_disk_shelf_1,E200-3006,disk_shelf,11,14,4,0.75,0.5834,0.18
+server_rack_3,rfid_tag_r3_disk_shelf_2,E200-3007,disk_shelf,15,18,4,0.75,0.7612,0.18
+server_rack_3,rfid_tag_r3_disk_shelf_3,E200-3008,disk_shelf,19,22,4,0.75,0.9390,0.18
+server_rack_3,rfid_tag_r3_disk_shelf_4,E200-3009,disk_shelf,25,28,4,0.75,1.2057,0.18
+server_rack_3,rfid_tag_r3_storage_controller_1,E200-300A,storage_controller,29,30,2,0.70,1.3391,0.18
+server_rack_3,rfid_tag_r3_storage_controller_2,E200-300B,storage_controller,31,32,2,0.70,1.4280,0.18
+server_rack_3,rfid_tag_r3_tape_library,E200-300C,tape_library,33,38,6,0.80,1.6058,0.18
+server_rack_3,rfid_tag_r3_cable_manager_2,E200-300D,cable_manager,39,39,1,0.15,1.7613,0.18
+server_rack_4,rfid_tag_r4_ups,E200-4001,ups,1,4,4,0.70,0.1389,0.18
+server_rack_4,rfid_tag_r4_pdu,E200-4002,pdu,5,5,1,0.42,0.2500,0.18
+server_rack_4,rfid_tag_r4_switch_1,E200-4003,switch,7,8,2,0.42,0.3612,0.18
+server_rack_4,rfid_tag_r4_firewall,E200-4004,firewall,9,9,1,0.42,0.4278,0.18
+server_rack_4,rfid_tag_r4_patch_panel_1,E200-4005,patch_panel,11,12,2,0.15,0.5390,0.18
+server_rack_4,rfid_tag_r4_cable_manager_1,E200-4006,cable_manager,13,13,1,0.15,0.6056,0.18
+server_rack_4,rfid_tag_r4_blade_chassis,E200-4007,blade_chassis,18,27,10,0.78,1.0279,0.18
+server_rack_4,rfid_tag_r4_server_1,E200-4008,server,29,30,2,0.70,1.3391,0.18
+server_rack_4,rfid_tag_r4_server_2,E200-4009,server,31,32,2,0.70,1.4280,0.18
+server_rack_4,rfid_tag_r4_console_server,E200-400A,console_server,39,39,1,0.30,1.7613,0.18
+server_rack_4,rfid_tag_r4_kvm,E200-400B,kvm,42,42,1,0.42,1.8947,0.18
+server_rack_5,rfid_tag_r5_ups,E200-5001,ups,1,4,4,0.70,0.1389,-0.18
+server_rack_5,rfid_tag_r5_pdu,E200-5002,pdu,5,5,1,0.42,0.2500,-0.18
+server_rack_5,rfid_tag_r5_switch_1,E200-5003,switch,6,7,2,0.42,0.3167,-0.18
+server_rack_5,rfid_tag_r5_patch_panel_1,E200-5004,patch_panel,8,9,2,0.15,0.4056,-0.18
+server_rack_5,rfid_tag_r5_cable_manager_1,E200-5005,cable_manager,10,10,1,0.15,0.4723,-0.18
+server_rack_5,rfid_tag_r5_switch_2,E200-5006,switch,11,12,2,0.42,0.5390,-0.18
+server_rack_5,rfid_tag_r5_patch_panel_2,E200-5007,patch_panel,13,14,2,0.15,0.6279,-0.18
+server_rack_5,rfid_tag_r5_cable_manager_2,E200-5008,cable_manager,15,15,1,0.15,0.6945,-0.18
+server_rack_5,rfid_tag_r5_switch_3,E200-5009,switch,16,17,2,0.42,0.7612,-0.18
+server_rack_5,rfid_tag_r5_patch_panel_3,E200-500A,patch_panel,18,19,2,0.15,0.8501,-0.18
+server_rack_5,rfid_tag_r5_cable_manager_3,E200-500B,cable_manager,20,20,1,0.15,0.9168,-0.18
+server_rack_5,rfid_tag_r5_switch_4,E200-500C,switch,21,22,2,0.42,0.9835,-0.18
+server_rack_5,rfid_tag_r5_patch_panel_4,E200-500D,patch_panel,23,24,2,0.15,1.0724,-0.18
+server_rack_5,rfid_tag_r5_cable_manager_4,E200-500E,cable_manager,25,25,1,0.15,1.1390,-0.18
+server_rack_5,rfid_tag_r5_fiber_patch_panel,E200-500F,fiber_patch_panel,26,29,4,0.30,1.2502,-0.18
+server_rack_5,rfid_tag_r5_server_1,E200-5010,server,30,31,2,0.70,1.3835,-0.18
+server_rack_5,rfid_tag_r5_server_2,E200-5011,server,32,33,2,0.70,1.4724,-0.18
+server_rack_5,rfid_tag_r5_server_3,E200-5012,server,34,35,2,0.70,1.5613,-0.18
+server_rack_5,rfid_tag_r5_server_4,E200-5013,server,36,37,2,0.70,1.6502,-0.18
+server_rack_5,rfid_tag_r5_server_5,E200-5014,server,38,39,2,0.70,1.7391,-0.18
+server_rack_5,rfid_tag_r5_server_6,E200-5015,server,40,41,2,0.70,1.8280,-0.18
+server_rack_5,rfid_tag_r5_kvm,E200-5016,kvm,42,42,1,0.42,1.8947,-0.18
+server_rack_6,rfid_tag_r6_ups,E200-6001,ups,1,4,4,0.70,0.1389,-0.18
+server_rack_6,rfid_tag_r6_pdu_1,E200-6002,pdu,5,5,1,0.42,0.2500,-0.18
+server_rack_6,rfid_tag_r6_switch_1,E200-6003,switch,6,7,2,0.42,0.3167,-0.18
+server_rack_6,rfid_tag_r6_switch_2,E200-6004,switch,8,9,2,0.42,0.4056,-0.18
+server_rack_6,rfid_tag_r6_cable_manager_1,E200-6005,cable_manager,10,10,1,0.15,0.4723,-0.18
+server_rack_6,rfid_tag_r6_server_1,E200-6006,server,11,12,2,0.70,0.5390,-0.18
+server_rack_6,rfid_tag_r6_server_2,E200-6007,server,13,14,2,0.70,0.6279,-0.18
+server_rack_6,rfid_tag_r6_server_3,E200-6008,server,15,16,2,0.70,0.7168,-0.18
+server_rack_6,rfid_tag_r6_server_4,E200-6009,server,17,18,2,0.70,0.8057,-0.18
+server_rack_6,rfid_tag_r6_server_5,E200-600A,server,19,20,2,0.70,0.8946,-0.18
+server_rack_6,rfid_tag_r6_server_6,E200-600B,server,21,22,2,0.70,0.9835,-0.18
+server_rack_6,rfid_tag_r6_server_7,E200-600C,server,23,24,2,0.70,1.0724,-0.18
+server_rack_6,rfid_tag_r6_server_8,E200-600D,server,25,26,2,0.70,1.1613,-0.18
+server_rack_6,rfid_tag_r6_server_9,E200-600E,server,27,28,2,0.70,1.2502,-0.18
+server_rack_6,rfid_tag_r6_server_10,E200-600F,server,29,30,2,0.70,1.3391,-0.18
+server_rack_6,rfid_tag_r6_server_11,E200-6010,server,31,32,2,0.70,1.4280,-0.18
+server_rack_6,rfid_tag_r6_server_12,E200-6011,server,33,34,2,0.70,1.5169,-0.18
+server_rack_6,rfid_tag_r6_cable_manager_2,E200-6012,cable_manager,35,35,1,0.15,1.5835,-0.18
+server_rack_6,rfid_tag_r6_server_13,E200-6013,server,36,37,2,0.70,1.6502,-0.18
+server_rack_6,rfid_tag_r6_server_14,E200-6014,server,38,39,2,0.70,1.7391,-0.18
+server_rack_6,rfid_tag_r6_pdu_2,E200-6015,pdu,40,40,1,0.42,1.8058,-0.18
+server_rack_6,rfid_tag_r6_firewall,E200-6016,firewall,41,41,1,0.42,1.8502,-0.18
+server_rack_6,rfid_tag_r6_console_server,E200-6017,console_server,42,42,1,0.30,1.8947,-0.18
+server_rack_7,rfid_tag_r7_ups,E200-7001,ups,1,4,4,0.70,0.1389,-0.18
+server_rack_7,rfid_tag_r7_pdu,E200-7002,pdu,5,5,1,0.42,0.2500,-0.18
+server_rack_7,rfid_tag_r7_san_switch_1,E200-7003,san_switch,6,7,2,0.42,0.3167,-0.18
+server_rack_7,rfid_tag_r7_san_switch_2,E200-7004,san_switch,8,9,2,0.42,0.4056,-0.18
+server_rack_7,rfid_tag_r7_cable_manager_1,E200-7005,cable_manager,10,10,1,0.15,0.4723,-0.18
+server_rack_7,rfid_tag_r7_disk_shelf_1,E200-7006,disk_shelf,11,14,4,0.75,0.5834,-0.18
+server_rack_7,rfid_tag_r7_disk_shelf_2,E200-7007,disk_shelf,15,18,4,0.75,0.7612,-0.18
+server_rack_7,rfid_tag_r7_disk_shelf_3,E200-7008,disk_shelf,19,22,4,0.75,0.9390,-0.18
+server_rack_7,rfid_tag_r7_disk_shelf_4,E200-7009,disk_shelf,25,28,4,0.75,1.2057,-0.18
+server_rack_7,rfid_tag_r7_storage_controller_1,E200-700A,storage_controller,29,30,2,0.70,1.3391,-0.18
+server_rack_7,rfid_tag_r7_storage_controller_2,E200-700B,storage_controller,31,32,2,0.70,1.4280,-0.18
+server_rack_7,rfid_tag_r7_tape_library,E200-700C,tape_library,33,38,6,0.80,1.6058,-0.18
+server_rack_7,rfid_tag_r7_cable_manager_2,E200-700D,cable_manager,39,39,1,0.15,1.7613,-0.18
+server_rack_8,rfid_tag_r8_ups,E200-8001,ups,1,4,4,0.70,0.1389,-0.18
+server_rack_8,rfid_tag_r8_pdu,E200-8002,pdu,5,5,1,0.42,0.2500,-0.18
+server_rack_8,rfid_tag_r8_switch_1,E200-8003,switch,7,8,2,0.42,0.3612,-0.18
+server_rack_8,rfid_tag_r8_firewall,E200-8004,firewall,9,9,1,0.42,0.4278,-0.18
+server_rack_8,rfid_tag_r8_patch_panel_1,E200-8005,patch_panel,11,12,2,0.15,0.5390,-0.18
+server_rack_8,rfid_tag_r8_cable_manager_1,E200-8006,cable_manager,13,13,1,0.15,0.6056,-0.18
+server_rack_8,rfid_tag_r8_blade_chassis,E200-8007,blade_chassis,18,27,10,0.78,1.0279,-0.18
+server_rack_8,rfid_tag_r8_server_1,E200-8008,server,29,30,2,0.70,1.3391,-0.18
+server_rack_8,rfid_tag_r8_server_2,E200-8009,server,31,32,2,0.70,1.4280,-0.18
+server_rack_8,rfid_tag_r8_console_server,E200-800A,console_server,39,39,1,0.30,1.7613,-0.18
+server_rack_8,rfid_tag_r8_kvm,E200-800B,kvm,42,42,1,0.42,1.8947,-0.18
+# EMPTY U RANGES (no link, no tag — a non-detection here is correct, not a miss)
+# server_rack_1, server_rack_5: none (42U occupied)
+# server_rack_2, server_rack_6: none (42U occupied)
+# server_rack_3, server_rack_7: U23-U24, U40-U42                     (5U empty, 37U occupied)
+# server_rack_4, server_rack_8: U6, U10, U14-U17, U28, U33-U38, U40-U41
+#                                                                    (15U empty, 27U occupied)
+# TAG COUNTS: rack_1=22  rack_2=23  rack_3=13  rack_4=11
+#             rack_5=22  rack_6=23  rack_7=13  rack_8=11   total=138
+# server_room.sdf instantiates every rack TWICE (rows 0/2 = racks 1-4, rows 1/3 = racks 5-8),
+# so that world contains 276 tag entities over 138 distinct EPCs.

@@ -1,0 +1,1298 @@
+<?xml version="1.0"?>
+<!--
+  server_rack_1 — network / patch-heavy 42U rack.
+  Target: Gazebo Ignition Fortress (ign-gazebo 6.x) / ROS 2 Humble.
+
+  Geometrically identical to the inline `server_rack` model formerly defined in
+  worlds/server_rack_rfid.sdf. Use it as the regression baseline: including this
+  model at pose "0 4.0 -0.1 0 0 0" reproduces that world exactly, EXCEPT that
+  the tags are now nested models and therefore RIDE THE RACK POSE. In the old
+  world they were independent world models pinned to absolute world y = 3.497,
+  so moving the rack silently left them behind. That is fixed here.
+
+  ===== U-map (1 RU = 44.45 mm; usable space starts at z = 0.05 in rack frame)
+    U1-U4    ups                 4RU UPS
+    U5       pdu                 1RU PDU
+    U6-U7    switch_1            2RU network switch
+    U8-U9    patch_panel_1       2RU copper patch panel
+    U10      cable_manager_1     1RU horizontal cable manager
+    U11-U12  switch_2
+    U13-U14  patch_panel_2
+    U15      cable_manager_2
+    U16-U17  switch_3
+    U18-U19  patch_panel_3
+    U20      cable_manager_3
+    U21-U22  switch_4
+    U23-U24  patch_panel_4
+    U25      cable_manager_4
+    U26-U29  fiber_patch_panel   4RU fiber patch panel
+    U30-U31  server_1            2RU server
+    U32-U33  server_2
+    U34-U35  server_3
+    U36-U37  server_4
+    U38-U39  server_5
+    U40-U41  server_6
+    U42      kvm                 1RU KVM console
+  42U occupied, 0U empty, 22 barcode labels.
+
+  z_center(Ua..Ub) = 0.05 + ((a-1)+b)/2 * 0.04445
+  height(Ua..Ub)   = (b-a+1) * 0.04445
+
+  ===== Barcode labels
+  Nested models named barcode_label_<7 hex digits>, on the front faceplate
+  (front of rack = -Y, local y = -0.50; labels sit 1 mm proud at y = -0.5042).
+  VISUAL-ONLY (no <collision>) so lidar / depth sensors and costmaps are not
+  affected by the 6.35 mm protrusions.
+
+  BarcodeScanner matches the PLAIN, UNSCOPED components::Name with no world-parent
+  filter, so nested labels are discovered exactly like top-level ones. Unlike the
+  rfid_tag_r1_* names these replaced, the model name is the barcode PAYLOAD and
+  carries no rack or equipment hint — that join lives in
+  rack_tag_manifest.csv, which is the point: the scanner reports a string and
+  nothing else, exactly as the hardware does.
+
+  ===== Two things the including world must do
+  1. Do NOT rename on include. The reader's <occluder><model> resolves via
+     EntityByComponents(Name(...), Model()) — plain name, no scoping. Rename the
+     model and attenuation silently stops (one ignwarn, then optimistic reads).
+     Add an occluder block naming "server_rack_1".
+  2. Nothing else. A printed label is passive geometry with no plugins, so
+     this model no longer needs the RFComms world plugin the CommsEndpoint
+     tags required.
+-->
+<sdf version="1.9">
+  <model name="server_rack_1">
+    <static>true</static>
+
+    <!-- ===================== FRAME ===================== -->
+
+    <link name="frame_side_left">
+      <pose>-0.29 0 1.0 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.02 1.07 2.0</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.02 1.07 2.0</size></box></geometry>
+        <material>
+          <ambient>0.15 0.15 0.15 1</ambient>
+          <diffuse>0.15 0.15 0.15 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <link name="frame_side_right">
+      <pose>0.29 0 1.0 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.02 1.07 2.0</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.02 1.07 2.0</size></box></geometry>
+        <material>
+          <ambient>0.15 0.15 0.15 1</ambient>
+          <diffuse>0.15 0.15 0.15 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <link name="frame_top">
+      <pose>0 0 2.01 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.60 1.07 0.02</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.60 1.07 0.02</size></box></geometry>
+        <material>
+          <ambient>0.15 0.15 0.15 1</ambient>
+          <diffuse>0.15 0.15 0.15 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <link name="frame_plinth">
+      <pose>0 0 0.025 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.60 1.07 0.05</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.60 1.07 0.05</size></box></geometry>
+        <material>
+          <ambient>0.10 0.10 0.10 1</ambient>
+          <diffuse>0.10 0.10 0.10 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- ===================== EQUIPMENT ===================== -->
+
+    <!-- 4RU UPS, U1-U4 -->
+    <link name="ups">
+      <pose>0 -0.15 0.1389 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.70 0.1778</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.70 0.1778</size></box></geometry>
+        <material>
+          <ambient>0.08 0.08 0.10 1</ambient>
+          <diffuse>0.08 0.08 0.10 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 1RU PDU, U5 -->
+    <link name="pdu">
+      <pose>0 -0.29 0.2500 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.42 0.0444</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.42 0.0444</size></box></geometry>
+        <material>
+          <ambient>0.30 0.10 0.10 1</ambient>
+          <diffuse>0.30 0.10 0.10 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU network switch 1, U6-U7 -->
+    <link name="switch_1">
+      <pose>0 -0.29 0.3167 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.42 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.42 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.16 0.20 0.30 1</ambient>
+          <diffuse>0.16 0.20 0.30 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU patch panel 1, U8-U9 -->
+    <link name="patch_panel_1">
+      <pose>0 -0.425 0.4056 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.15 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.15 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.35 0.35 0.35 1</ambient>
+          <diffuse>0.35 0.35 0.35 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 1RU cable manager 1, U10 -->
+    <link name="cable_manager_1">
+      <pose>0 -0.425 0.4723 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.15 0.0444</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.15 0.0444</size></box></geometry>
+        <material>
+          <ambient>0.22 0.22 0.22 1</ambient>
+          <diffuse>0.22 0.22 0.22 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU network switch 2, U11-U12 -->
+    <link name="switch_2">
+      <pose>0 -0.29 0.5390 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.42 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.42 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.16 0.20 0.30 1</ambient>
+          <diffuse>0.16 0.20 0.30 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU patch panel 2, U13-U14 -->
+    <link name="patch_panel_2">
+      <pose>0 -0.425 0.6279 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.15 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.15 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.35 0.35 0.35 1</ambient>
+          <diffuse>0.35 0.35 0.35 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 1RU cable manager 2, U15 -->
+    <link name="cable_manager_2">
+      <pose>0 -0.425 0.6945 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.15 0.0444</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.15 0.0444</size></box></geometry>
+        <material>
+          <ambient>0.22 0.22 0.22 1</ambient>
+          <diffuse>0.22 0.22 0.22 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU network switch 3, U16-U17 -->
+    <link name="switch_3">
+      <pose>0 -0.29 0.7612 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.42 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.42 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.16 0.20 0.30 1</ambient>
+          <diffuse>0.16 0.20 0.30 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU patch panel 3, U18-U19 -->
+    <link name="patch_panel_3">
+      <pose>0 -0.425 0.8501 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.15 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.15 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.35 0.35 0.35 1</ambient>
+          <diffuse>0.35 0.35 0.35 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 1RU cable manager 3, U20 -->
+    <link name="cable_manager_3">
+      <pose>0 -0.425 0.9168 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.15 0.0444</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.15 0.0444</size></box></geometry>
+        <material>
+          <ambient>0.22 0.22 0.22 1</ambient>
+          <diffuse>0.22 0.22 0.22 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU network switch 4, U21-U22 -->
+    <link name="switch_4">
+      <pose>0 -0.29 0.9835 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.42 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.42 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.16 0.20 0.30 1</ambient>
+          <diffuse>0.16 0.20 0.30 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU patch panel 4, U23-U24 -->
+    <link name="patch_panel_4">
+      <pose>0 -0.425 1.0724 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.15 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.15 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.35 0.35 0.35 1</ambient>
+          <diffuse>0.35 0.35 0.35 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 1RU cable manager 4, U25 -->
+    <link name="cable_manager_4">
+      <pose>0 -0.425 1.1390 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.15 0.0444</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.15 0.0444</size></box></geometry>
+        <material>
+          <ambient>0.22 0.22 0.22 1</ambient>
+          <diffuse>0.22 0.22 0.22 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 4RU fiber patch panel, U26-U29 -->
+    <link name="fiber_patch_panel">
+      <pose>0 -0.35 1.2502 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.30 0.1778</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.30 0.1778</size></box></geometry>
+        <material>
+          <ambient>0.55 0.48 0.15 1</ambient>
+          <diffuse>0.55 0.48 0.15 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU server 1, U30-U31 -->
+    <link name="server_1">
+      <pose>0 -0.15 1.3835 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.10 0.10 0.12 1</ambient>
+          <diffuse>0.10 0.10 0.12 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU server 2, U32-U33 -->
+    <link name="server_2">
+      <pose>0 -0.15 1.4724 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.10 0.10 0.12 1</ambient>
+          <diffuse>0.10 0.10 0.12 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU server 3, U34-U35 -->
+    <link name="server_3">
+      <pose>0 -0.15 1.5613 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.10 0.10 0.12 1</ambient>
+          <diffuse>0.10 0.10 0.12 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU server 4, U36-U37 -->
+    <link name="server_4">
+      <pose>0 -0.15 1.6502 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.10 0.10 0.12 1</ambient>
+          <diffuse>0.10 0.10 0.12 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU server 5, U38-U39 -->
+    <link name="server_5">
+      <pose>0 -0.15 1.7391 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.10 0.10 0.12 1</ambient>
+          <diffuse>0.10 0.10 0.12 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 2RU server 6, U40-U41 -->
+    <link name="server_6">
+      <pose>0 -0.15 1.8280 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.70 0.0889</size></box></geometry>
+        <material>
+          <ambient>0.10 0.10 0.12 1</ambient>
+          <diffuse>0.10 0.10 0.12 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 1RU KVM console, U42 -->
+    <link name="kvm">
+      <pose>0 -0.29 1.8947 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.483 0.42 0.0444</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.483 0.42 0.0444</size></box></geometry>
+        <material>
+          <ambient>0.12 0.25 0.18 1</ambient>
+          <diffuse>0.12 0.25 0.18 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- ===================== RFID TAGS =====================
+         Local y = -0.503: 3 mm proud of the rack front plane (y = -0.50).
+         Local z equals the tagged equipment's local z. -->
+
+    <!-- ups, U1-4 -->
+    <model name="barcode_label_031FB00">
+      <static>true</static>
+      <pose>0.18 -0.5042 0.1389 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
+          <material>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB00.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- pdu, U5-5 -->
+    <model name="barcode_label_031FB01">
+      <static>true</static>
+      <pose>0.18 -0.5042 0.2500 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
+          <material>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB01.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- switch, U6-7 -->
+    <model name="barcode_label_031FB02">
+      <static>true</static>
+      <pose>0.18 -0.5042 0.3167 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
+          <material>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB02.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- patch_panel, U8-9 -->
+    <model name="barcode_label_031FB03">
+      <static>true</static>
+      <pose>0.18 -0.5042 0.4056 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
+          <material>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB03.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- cable_manager, U10-10 -->
+    <model name="barcode_label_031FB04">
+      <static>true</static>
+      <pose>0.18 -0.5042 0.4723 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
+          <material>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB04.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- switch, U11-12 -->
+    <model name="barcode_label_031FB05">
+      <static>true</static>
+      <pose>0.18 -0.5042 0.5390 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
+          <material>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB05.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- patch_panel, U13-14 -->
+    <model name="barcode_label_031FB06">
+      <static>true</static>
+      <pose>0.18 -0.5042 0.6279 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
+          <material>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB06.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- cable_manager, U15-15 -->
+    <model name="barcode_label_031FB07">
+      <static>true</static>
+      <pose>0.18 -0.5042 0.6945 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
+          <material>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB07.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- switch, U16-17 -->
+    <model name="barcode_label_031FB08">
+      <static>true</static>
+      <pose>0.18 -0.5042 0.7612 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
+          <material>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB08.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- patch_panel, U18-19 -->
+    <model name="barcode_label_031FB09">
+      <static>true</static>
+      <pose>0.18 -0.5042 0.8501 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
+          <material>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB09.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- cable_manager, U20-20 -->
+    <model name="barcode_label_031FB0A">
+      <static>true</static>
+      <pose>0.18 -0.5042 0.9168 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
+          <material>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB0A.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- switch, U21-22 -->
+    <model name="barcode_label_031FB0B">
+      <static>true</static>
+      <pose>0.18 -0.5042 0.9835 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
+          <material>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB0B.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- patch_panel, U23-24 -->
+    <model name="barcode_label_031FB0C">
+      <static>true</static>
+      <pose>0.18 -0.5042 1.0724 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
+          <material>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB0C.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- cable_manager, U25-25 -->
+    <model name="barcode_label_031FB0D">
+      <static>true</static>
+      <pose>0.18 -0.5042 1.1390 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
+          <material>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB0D.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- fiber_patch_panel, U26-29 -->
+    <model name="barcode_label_031FB0E">
+      <static>true</static>
+      <pose>0.18 -0.5042 1.2502 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
+          <material>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB0E.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- server, U30-31 -->
+    <model name="barcode_label_031FB0F">
+      <static>true</static>
+      <pose>0.18 -0.5042 1.3835 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
+          <material>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB0F.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- server, U32-33 -->
+    <model name="barcode_label_031FB10">
+      <static>true</static>
+      <pose>0.18 -0.5042 1.4724 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
+          <material>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB10.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- server, U34-35 -->
+    <model name="barcode_label_031FB11">
+      <static>true</static>
+      <pose>0.18 -0.5042 1.5613 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
+          <material>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB11.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- server, U36-37 -->
+    <model name="barcode_label_031FB12">
+      <static>true</static>
+      <pose>0.18 -0.5042 1.6502 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
+          <material>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB12.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- server, U38-39 -->
+    <model name="barcode_label_031FB13">
+      <static>true</static>
+      <pose>0.18 -0.5042 1.7391 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
+          <material>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB13.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- server, U40-41 -->
+    <model name="barcode_label_031FB14">
+      <static>true</static>
+      <pose>0.18 -0.5042 1.8280 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
+          <material>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB14.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- kvm, U42-42 -->
+    <model name="barcode_label_031FB15">
+      <static>true</static>
+      <pose>0.18 -0.5042 1.8947 0 0 0</pose>
+      <link name="label_link">
+        <visual name="substrate">
+          <geometry><box><size>0.03810 0.00635 0.01270</size></box></geometry>
+          <material>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+        <!-- Printed face, 0.1 mm proud of the substrate so it never
+             z-fights. Rotating +90 deg about X sends the quad's +Z
+             face to -Y (the aisle) and its +Y to world up, so the
+             texture reads the right way round. -90, which is what
+             calibration_plate_model uses, points the BACK face out
+             and flips the image. Code 128 is bi-directional so a
+             mirrored symbol still decodes, but the human-readable
+             line would be reversed. roughness 1 / metalness 0 keeps
+             it matte: a specular highlight across the bars is
+             exactly what stops a real scanner decoding. -->
+        <visual name="print">
+          <pose>0 -0.00327 0 1.5708 0 0</pose>
+          <geometry><box><size>0.03810 0.01270 0.0002</size></box></geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <pbr><metal>
+              <albedo_map>model://barcode_labels/materials/textures/031FB15.png</albedo_map>
+              <metalness>0.0</metalness>
+              <roughness>1.0</roughness>
+            </metal></pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+  </model>
+</sdf>
