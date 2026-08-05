@@ -112,12 +112,16 @@ void QuadrupedController::controlLoop_()
     geometry::Transformation target_foot_positions[4];
     bool foot_contacts[4];
 
-    // Seed with the last valid command: Kinematics::inverse returns early
-    // without writing the output array when a foot target is unreachable or
-    // produces NaN, which previously published uninitialized stack memory.
+    // Seed with NaN so an aborted solve is DETECTABLE: Kinematics::inverse
+    // returns early without writing the output array when ANY foot target is
+    // unreachable (it aborts all 12 joints, not just the failing leg). The
+    // previous seeding with last_valid_joints_ made that abort invisible —
+    // the stale pose was silently re-published while the gait phase kept
+    // advancing, so legs froze mid-gait (worst while turning, when foot
+    // targets are pushed toward max extension) and then jumped on recovery.
     for(size_t i = 0; i < 12; i++)
     {
-        target_joint_positions[i] = last_valid_joints_[i];
+        target_joint_positions[i] = std::numeric_limits<float>::quiet_NaN();
     }
 
     body_controller_.poseCommand(target_foot_positions, req_pose_);
@@ -137,11 +141,31 @@ void QuadrupedController::controlLoop_()
 
     if(!valid)
     {
-        // No valid command yet (IK failed before any successful solve) —
-        // publishing would command NaN/garbage. Skip this cycle.
+        bool have_last_valid = !std::isnan(last_valid_joints_[0]);
+        if(!have_last_valid)
+        {
+            // No valid command yet (IK failed before any successful solve) —
+            // publishing would command NaN/garbage. Skip this cycle.
+            RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
+                "IK produced no valid joint targets; skipping joint command this cycle");
+            publishFootContacts_(foot_contacts);
+            return;
+        }
+
+        // Unreachable foot target mid-gait: hold the last valid pose (same
+        // physical behavior as before) but say so — if this fires while
+        // turning, the commanded velocity/height combination is exceeding
+        // leg reach and should be reduced.
         RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
-            "IK produced no valid joint targets; skipping joint command this cycle");
+            "IK unreachable foot target (cmd vx=%.2f vy=%.2f wz=%.2f); "
+            "holding last valid joint command",
+            req_vel_.linear.x, req_vel_.linear.y, req_vel_.angular.z);
+        for(size_t i = 0; i < 12; i++)
+        {
+            target_joint_positions[i] = last_valid_joints_[i];
+        }
         publishFootContacts_(foot_contacts);
+        publishJoints_(target_joint_positions);
         return;
     }
 

@@ -100,7 +100,9 @@ def generate_launch_description():
         parameters=[
             {'use_sim_time': True},
             {'robot_description': robot_desc},
-            {"publish_frequency": 200.0},
+            # Matches the gz JointStatePublisher update_rate (model.sdf.xacro);
+            # RSP just re-broadcasts joint states as TF.
+            {"publish_frequency": 100.0},
         ],
         remappings=[
             ('/joint_states', '/spot_driver/joint_states'),
@@ -134,6 +136,11 @@ def generate_launch_description():
             {"publish_joint_states": False},
             {"publish_foot_contacts": True},
             {"publish_joint_control": True},
+            # 100 Hz (code default is 200): halves command traffic through the
+            # state bridge. The gz JTC's PID still runs at the 1 kHz physics
+            # rate — this only sets how often the target updates. The
+            # controller's time_from_start tracks loop_period automatically.
+            {"loop_rate": 100.0},
             {"joint_controller_topic": "/spot/joint_trajectory"},
             {"urdf": urdf_file},
             links_param,

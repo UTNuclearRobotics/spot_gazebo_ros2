@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <sdf version="1.9">
-  <world name="server_room">
+  <world name="server_rack">
 
     <plugin
         filename="ignition-gazebo-physics-system"
@@ -33,30 +33,6 @@
         filename="ignition-gazebo-log-system"
         name="ignition::gazebo::systems::LogRecord">
     </plugin> -->
-
-    <!-- RFComms was required only by the CommsEndpoint plugins the RFID tag
-         models carried. The barcode labels that replaced them carry no
-         plugins at all — a printed label is passive geometry — so this world
-         no longer needs it. Left commented rather than deleted because
-         server_rack_rfid.sdf still depends on the same block.
-
-    <plugin
-        filename="ignition-gazebo-rf-comms-system"
-        name="ignition::gazebo::systems::RFComms">
-      <range_config>
-        <max_range>6.0</max_range>
-        <fading_exponent>2.5</fading_exponent>
-        <l0>40</l0>
-        <sigma>10.0</sigma>
-      </range_config>
-      <radio_config>
-        <capacity>1000000</capacity>
-        <tx_power>0</tx_power>
-        <noise_floor>-90</noise_floor>
-        <modulation>QPSK</modulation>
-      </radio_config>
-    </plugin>
-    -->
 
     <gui fullscreen="0">
       <plugin filename="MinimalScene" name="3D View">
@@ -189,25 +165,22 @@
     </light>
 
     <!-- ===================== ROOM ENCLOSURE ===================== -->
-    <!-- 1.2m clearance from the outer rows' rear frame edge to the -Y and +Y
-         walls. The X walls are far wider than the 4-rack rows need; the open
-         floor either side is deliberate working space. -->
 
     <model name="room_floor">
       <static>true</static>
-      <pose>0 3.405 -0.1 0 0 0</pose>
+      <pose>0 4.0 -0.1 0 0 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry>
             <box>
-              <size>9.51 10.48 0.1</size>
+              <size>15.0 15.0 0.1</size>
             </box>
           </geometry>
         </collision>
         <visual name="visual">
           <geometry>
             <box>
-              <size>9.51 10.48 0.1</size>
+              <size>15.0 15.0 0.1</size>
             </box>
           </geometry>
           <material>
@@ -221,19 +194,19 @@
     <model name="room_wall_front">
       <!-- -Y wall -->
       <static>true</static>
-      <pose>0 -1.785 1.5 0 0 0</pose>
+      <pose>0 -3.5 1.5 0 0 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry>
             <box>
-              <size>9.51 0.1 3</size>
+              <size>15.0 0.1 3</size>
             </box>
           </geometry>
         </collision>
         <visual name="visual">
           <geometry>
             <box>
-              <size>9.51 0.1 3</size>
+              <size>15.0 0.1 3</size>
             </box>
           </geometry>
           <material>
@@ -247,19 +220,19 @@
     <model name="room_wall_back">
       <!-- +Y wall -->
       <static>true</static>
-      <pose>0 8.595 1.5 0 0 0</pose>
+      <pose>0 11.5 1.5 0 0 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry>
             <box>
-              <size>9.51 0.1 3</size>
+              <size>15.0 0.1 3</size>
             </box>
           </geometry>
         </collision>
         <visual name="visual">
           <geometry>
             <box>
-              <size>9.51 0.1 3</size>
+              <size>15.0 0.1 3</size>
             </box>
           </geometry>
           <material>
@@ -273,19 +246,19 @@
     <model name="room_wall_left">
       <!-- -X wall -->
       <static>true</static>
-      <pose>-4.705 3.405 1.5 0 0 0</pose>
+      <pose>-7.5 4.0 1.5 0 0 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry>
             <box>
-              <size>0.1 10.48 3</size>
+              <size>0.1 15.0 3</size>
             </box>
           </geometry>
         </collision>
         <visual name="visual">
           <geometry>
             <box>
-              <size>0.1 10.48 3</size>
+              <size>0.1 15.0 3</size>
             </box>
           </geometry>
           <material>
@@ -299,19 +272,19 @@
     <model name="room_wall_right">
       <!-- +X wall -->
       <static>true</static>
-      <pose>4.705 3.405 1.5 0 0 0</pose>
+      <pose>7.5 4.0 1.5 0 0 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry>
             <box>
-              <size>0.1 10.48 3</size>
+              <size>0.1 15.0 3</size>
             </box>
           </geometry>
         </collision>
         <visual name="visual">
           <geometry>
             <box>
-              <size>0.1 10.48 3</size>
+              <size>0.1 15.0 3</size>
             </box>
           </geometry>
           <material>
@@ -322,51 +295,12 @@
       </link>
     </model>
 
-    <!-- Facing +X, at the mouth of cold aisle 1 (y = 1.135 is its centreline)
-         and clear of the rack block, which spans x = -1.20 .. 1.20. -->
     <model name="spot">
-        <pose>-3.0 1.135 0.7 0 0 0</pose>
+        <pose>0 0.0 0.7 0 0 0</pose>
         <include merge="true">
             <uri>package://spot_description_sim/models/spot</uri>
         </include>
 
-        <!-- Zebra Symbol LS2208 1-D laser scanner, mounted where the RFID
-             antenna used to be. This world reads BARCODES; the RFID reader
-             worlds (server_rack_rfid.sdf, rfid_calibration.sdf) are unchanged
-             and still exercise RfidReader.
-
-             Datasheet: Motorola "Symbol LS2208 Specification Sheet",
-             SS-LS2208, 12/08 — the sheet for LS2208-SR20007R-UR.
-
-             VERBATIM FROM THE SHEET
-               update_rate      100 scans/sec typical
-               print_contrast   20% minimum reflective difference
-               roll_limit       +/- 30 deg
-               pitch_limit      +/- 65 deg
-               skew_limit       +/- 60 deg
-               dof_near/far     0.0381 - 0.2540 m, i.e. the Code 39 7.5 mil
-                                row (1.50" - 10.00") converted from the
-                                authoritative inch column. The sheet has no
-                                Code 128 row; depth of field follows the narrow
-                                element width, not the symbology.
-
-             SET BY OUR LABEL, AND THESE ARE THE ONES THAT ACTUALLY BIND
-               dof_near/dof_far 7.5 mil is forced by fitting a 7-hex-digit
-                                Code 128 symbol (132 modules incl. quiet
-                                zones) into the 28 mm print area. A 4x
-                                reduction from the RFID reader's 1.0 m
-                                max_range, and the single biggest behavioural
-                                change: the arm has to get within 25 cm.
-               auto_roll_limit  Derives roll from the printed symbol as
-                                atan((3.0 + 0.2) / 25.146) = 7.25 deg,
-                                overriding the sheet's +/-30 deg. Short bars,
-                                not the scanner, are the limit. Expect this to
-                                dominate aiming.
-
-             NOT IN THE DATASHEET — scan_halfangle, beam_spot and rescan_delay
-             are absent from both the 12/08 and 04/15 revisions. See the
-             "NOT IN THE DATASHEET" block in BarcodeScanner.cc before quoting
-             any of them as a specification. -->
         <plugin filename="BarcodeScanner" name="barcode::BarcodeScanner">
           <scanner_id>ls2208</scanner_id>
           <label_prefix>barcode_label_</label_prefix>
@@ -415,77 +349,7 @@
             <name>rack_r0_c0</name><model>rack_r0_c0</model>
             <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
           </occluder>
-          <occluder>
-            <name>rack_r0_c1</name><model>rack_r0_c1</model>
-            <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-          </occluder>
-          <occluder>
-            <name>rack_r0_c2</name><model>rack_r0_c2</model>
-            <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-          </occluder>
-          <occluder>
-            <name>rack_r0_c3</name><model>rack_r0_c3</model>
-            <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-          </occluder>
-          <occluder>
-            <name>rack_r1_c0</name><model>rack_r1_c0</model>
-            <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-          </occluder>
-          <occluder>
-            <name>rack_r1_c1</name><model>rack_r1_c1</model>
-            <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-          </occluder>
-          <occluder>
-            <name>rack_r1_c2</name><model>rack_r1_c2</model>
-            <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-          </occluder>
-          <occluder>
-            <name>rack_r1_c3</name><model>rack_r1_c3</model>
-            <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-          </occluder>
-          <occluder>
-            <name>rack_r2_c0</name><model>rack_r2_c0</model>
-            <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-          </occluder>
-          <occluder>
-            <name>rack_r2_c1</name><model>rack_r2_c1</model>
-            <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-          </occluder>
-          <occluder>
-            <name>rack_r2_c2</name><model>rack_r2_c2</model>
-            <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-          </occluder>
-          <occluder>
-            <name>rack_r2_c3</name><model>rack_r2_c3</model>
-            <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-          </occluder>
-          <occluder>
-            <name>rack_r3_c0</name><model>rack_r3_c0</model>
-            <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-          </occluder>
-          <occluder>
-            <name>rack_r3_c1</name><model>rack_r3_c1</model>
-            <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-          </occluder>
-          <occluder>
-            <name>rack_r3_c2</name><model>rack_r3_c2</model>
-            <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-          </occluder>
-          <occluder>
-            <name>rack_r3_c3</name><model>rack_r3_c3</model>
-            <pose>0 0.035 1.015 0 0 0</pose><size>0.60 1.03 2.03</size>
-          </occluder>
 
-          <!-- Exit window. Inherited verbatim from the RFID antenna mount so
-               the arm kinematics and any cached scan poses stay valid, and it
-               is co-located with alpha_detector. Boresight is +X, the line
-               sweeps in scanner XY, bar height is along scanner Z — so the
-               scanner's Z axis must be roughly parallel to the label's short
-               axis or the roll gate above rejects everything.
-
-               <pose> must stay equal to the offset in
-               rfid_inventory_tracking/urdf/rfid_antenna.xacro (rename that to
-               barcode_scanner.xacro when the consumer package is migrated). -->
           <link>arm0_hand</link>
           <pose>0.10473 0.0049 -0.1117 0 0 0</pose>
           <parent_frame>arm0_hand</parent_frame>
@@ -537,89 +401,7 @@
     <include>
       <name>rack_r0_c0</name>
       <uri>model://server_rack_1</uri>
-      <pose>-0.90 0 -0.05 0 0 3.14159265</pose>
+      <pose>0 4.0 -0.1 0 0 0</pose>
     </include>
-    <include>
-      <name>rack_r0_c1</name>
-      <uri>model://server_rack_2</uri>
-      <pose>-0.30 0 -0.05 0 0 3.14159265</pose>
-    </include>
-    <include>
-      <name>rack_r0_c2</name>
-      <uri>model://server_rack_3</uri>
-      <pose>0.30 0 -0.05 0 0 3.14159265</pose>
-    </include>
-    <include>
-      <name>rack_r0_c3</name>
-      <uri>model://server_rack_4</uri>
-      <pose>0.90 0 -0.05 0 0 3.14159265</pose>
-    </include>
-
-    <!-- Row 1 (y = 2.27, yaw 0, faces -Y into cold aisle 1) -->
-    <include>
-      <name>rack_r1_c0</name>
-      <uri>model://server_rack_5</uri>
-      <pose>-0.90 2.27 -0.05 0 0 0</pose>
-    </include>
-    <include>
-      <name>rack_r1_c1</name>
-      <uri>model://server_rack_6</uri>
-      <pose>-0.30 2.27 -0.05 0 0 0</pose>
-    </include>
-    <include>
-      <name>rack_r1_c2</name>
-      <uri>model://server_rack_7</uri>
-      <pose>0.30 2.27 -0.05 0 0 0</pose>
-    </include>
-    <include>
-      <name>rack_r1_c3</name>
-      <uri>model://server_rack_8</uri>
-      <pose>0.90 2.27 -0.05 0 0 0</pose>
-    </include>
-
-    <!-- Row 2 (y = 4.54, yaw pi, faces +Y into cold aisle 2) -->
-    <include>
-      <name>rack_r2_c0</name>
-      <uri>model://server_rack_1</uri>
-      <pose>-0.90 4.54 -0.05 0 0 3.14159265</pose>
-    </include>
-    <include>
-      <name>rack_r2_c1</name>
-      <uri>model://server_rack_2</uri>
-      <pose>-0.30 4.54 -0.05 0 0 3.14159265</pose>
-    </include>
-    <include>
-      <name>rack_r2_c2</name>
-      <uri>model://server_rack_3</uri>
-      <pose>0.30 4.54 -0.05 0 0 3.14159265</pose>
-    </include>
-    <include>
-      <name>rack_r2_c3</name>
-      <uri>model://server_rack_4</uri>
-      <pose>0.90 4.54 -0.05 0 0 3.14159265</pose>
-    </include>
-
-    <!-- Row 3 (y = 6.81, yaw 0, faces -Y into cold aisle 2) -->
-    <include>
-      <name>rack_r3_c0</name>
-      <uri>model://server_rack_5</uri>
-      <pose>-0.90 6.81 -0.05 0 0 0</pose>
-    </include>
-    <include>
-      <name>rack_r3_c1</name>
-      <uri>model://server_rack_6</uri>
-      <pose>-0.30 6.81 -0.05 0 0 0</pose>
-    </include>
-    <include>
-      <name>rack_r3_c2</name>
-      <uri>model://server_rack_7</uri>
-      <pose>0.30 6.81 -0.05 0 0 0</pose>
-    </include>
-    <include>
-      <name>rack_r3_c3</name>
-      <uri>model://server_rack_8</uri>
-      <pose>0.90 6.81 -0.05 0 0 0</pose>
-    </include>
-
   </world>
 </sdf>
