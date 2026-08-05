@@ -71,7 +71,7 @@
         <contact>
           <ode>
             <kp>1e+07</kp>
-            <kd>100</kd>
+            <kd>1000</kd>
           </ode>
         </contact>
         <friction>
@@ -1120,7 +1120,10 @@
       filename="ignition-gazebo-joint-state-publisher-system"
       name="ignition::gazebo::systems::JointStatePublisher">
       <topic>model/spot/joint_state</topic>
-      <update_rate>200</update_rate>
+      <!-- 100 Hz (was 200): halves bridge/TF wall-clock load so the sim-time
+           pipeline keeps up at higher RTF. Keep in sync with the controller
+           loop_rate and RSP publish_frequency (spot.gazebo.launch.py). -->
+      <update_rate>100</update_rate>
       <!-- Publish ONLY actuated joints, matching hardware
            /spot_driver/joint_states. Without this list the plugin publishes
            every joint including welded ones (feet, imu, battery, cameras,
@@ -1150,7 +1153,11 @@
     <plugin
       filename="ignition-gazebo-odometry-publisher-system"
       name="ignition::gazebo::systems::OdometryPublisher">
-      <odom_publish_frequency>10</odom_publish_frequency>
+      <!-- 50 Hz (was 100, originally 10): at 10 Hz the odom stream was far
+           sparser than the joint states, so TF odom->base updated in visible
+           steps and EKF odom0 measurements were stale. 50 Hz still oversamples
+           the 30 Hz footprint_to_odom EKF while halving bridge load. -->
+      <odom_publish_frequency>50</odom_publish_frequency>
       <odom_topic>/model/spot/odometry</odom_topic>
       <odom_frame>odom</odom_frame>
       <robot_base_frame>body</robot_base_frame>
@@ -1172,18 +1179,27 @@
       name="ignition::gazebo::systems::JointTrajectoryController">
       <topic>model/spot/joint_trajectory</topic>
 
-      <xacro:pid_joint joint="front_left_hip_x"  p="500" i="1" d="20"/>
-      <xacro:pid_joint joint="front_left_hip_y"  p="500" i="1" d="20"/>
-      <xacro:pid_joint joint="front_left_knee"   p="500" i="1" d="20"/>
-      <xacro:pid_joint joint="front_right_hip_x" p="500" i="1" d="20"/>
-      <xacro:pid_joint joint="front_right_hip_y" p="500" i="1" d="20"/>
-      <xacro:pid_joint joint="front_right_knee"  p="500" i="1" d="20"/>
-      <xacro:pid_joint joint="rear_left_hip_x"   p="500" i="1" d="20"/>
-      <xacro:pid_joint joint="rear_left_hip_y"   p="500" i="1" d="20"/>
-      <xacro:pid_joint joint="rear_left_knee"    p="500" i="1" d="20"/>
-      <xacro:pid_joint joint="rear_right_hip_x"  p="500" i="1" d="20"/>
-      <xacro:pid_joint joint="rear_right_hip_y"  p="500" i="1" d="20"/>
-      <xacro:pid_joint joint="rear_right_knee"   p="500" i="1" d="20"/>
+      <!-- Leg gains: aligned to the proven original CHAMP config (500/1/20,
+           PD-like — see champ_orig), with p scaled ~20% to 600 for the added
+           arm + RL kit payload so stance stiffness-to-weight matches the
+           original. i=1 with a tight ±1 Nm clamp (original used the plugin
+           default clamp): integral action wound up while a leg was unloaded
+           in swing and kicked at touchdown — the earlier 900/12/±25 gains
+           saturated the 80 Nm effort cap and caused twitch/stutter. d kept
+           at 20 (raising it adds tracking lag). If stance legs sag, raise p
+           toward 650 — do not raise i. -->
+      <xacro:pid_joint joint="front_left_hip_x"  p="600" i="1" d="20" i_min="-1" i_max="1"/>
+      <xacro:pid_joint joint="front_left_hip_y"  p="600" i="1" d="20" i_min="-1" i_max="1"/>
+      <xacro:pid_joint joint="front_left_knee"   p="600" i="1" d="20" i_min="-1" i_max="1"/>
+      <xacro:pid_joint joint="front_right_hip_x" p="600" i="1" d="20" i_min="-1" i_max="1"/>
+      <xacro:pid_joint joint="front_right_hip_y" p="600" i="1" d="20" i_min="-1" i_max="1"/>
+      <xacro:pid_joint joint="front_right_knee"  p="600" i="1" d="20" i_min="-1" i_max="1"/>
+      <xacro:pid_joint joint="rear_left_hip_x"   p="600" i="1" d="20" i_min="-1" i_max="1"/>
+      <xacro:pid_joint joint="rear_left_hip_y"   p="600" i="1" d="20" i_min="-1" i_max="1"/>
+      <xacro:pid_joint joint="rear_left_knee"    p="600" i="1" d="20" i_min="-1" i_max="1"/>
+      <xacro:pid_joint joint="rear_right_hip_x"  p="600" i="1" d="20" i_min="-1" i_max="1"/>
+      <xacro:pid_joint joint="rear_right_hip_y"  p="600" i="1" d="20" i_min="-1" i_max="1"/>
+      <xacro:pid_joint joint="rear_right_knee"   p="600" i="1" d="20" i_min="-1" i_max="1"/>
 
       <!-- Arm joints — arm0_shoulder_roll is fixed and excluded.
            init values = STOW_CONFIG from sim_manipulation_driver.py, so the

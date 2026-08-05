@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <!-- Intentionally empty. This model exists solely as a texture resource
+       path for model://barcode_labels/materials/textures/*.png -->
+  <model name="barcode_labels"><static>true</static>
+    <link name="link"/>
+  </model>
+</sdf>

@@ -57,6 +57,20 @@ target_link_libraries(RfidReader
   ignition-plugin1::ignition-plugin1
 )
 
+# Zebra Symbol LS2208 1-D laser barcode scanner. Coexists with the RFID
+# readers above rather than replacing them: the RFID plugins stay buildable so
+# server_rack_rfid.sdf and rfid_calibration.sdf keep working, and so the two
+# sensing modalities can be compared. See the header comment in
+# BarcodeScanner.cc for why its geometry gates look nothing like RfidReader's.
+add_library(BarcodeScanner SHARED
+  custom_gazebo_plugins/BarcodeScanner.cc
+)
+set_property(TARGET BarcodeScanner PROPERTY CXX_STANDARD 17)
+target_link_libraries(BarcodeScanner
+  ignition-gazebo6::ignition-gazebo6
+  ignition-plugin1::ignition-plugin1
+)
+
 # Kinematic joint-state teleport at spawn (arm stow pose) — see the header
 # comment in JointStateInitializer.cc for why the JTC initial_position
 # parameter is not enough.
@@ -70,7 +84,7 @@ target_link_libraries(JointStateInitializer
 )
 
 install(
-  TARGETS RfidPdReader RfidReader JointStateInitializer
+  TARGETS RfidPdReader RfidReader BarcodeScanner JointStateInitializer
   LIBRARY DESTINATION lib/${PROJECT_NAME}
 )
 

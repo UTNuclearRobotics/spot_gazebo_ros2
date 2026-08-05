@@ -34,5 +34,4 @@ log
 *.out
 *.app
 
-spot_gazebo/models/barcode_labels/
-spot_gazebo/models/barcode_plate_target/
+spot_gazebo/models/barcode_labels/materials

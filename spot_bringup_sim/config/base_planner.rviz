@@ -14,13 +14,17 @@ Panels:
         - /SensorData1/LaserScan1/Topic1
         - /SensorData1/Realsense1/Autocompute Value Bounds1
         - /SensorData1/StableLidarPoints1/Topic1
+        - /TargetPoses1
         - /TargetPoses1/ManipulationTarget1/Topic1
         - /PlaceNet1
         - /PointCloud21/Autocompute Value Bounds1
         - /Calibration1/Calibration Poses1/Topic1
         - /Inventory Discovery1
         - /Inventory Discovery1/PointCloud21/Topic1
+        - /Inventory Discovery1/PoseArray1
         - /Inventory Discovery1/PoseArray2/Topic1
+        - /PointCloud22
+        - /PointCloud22/Topic1
       Splitter Ratio: 0.4715718924999237
     Tree Height: 664
   - Class: rviz_common/Selection
@@ -82,21 +86,10 @@ Visualization Manager:
             Expand Link Details: false
             Expand Tree: false
             Link Tree Style: Links in Alphabetic Order
-            alpha_counter_enclosure_base:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-              Value: true
             alpha_detector:
               Alpha: 1
               Show Axes: false
               Show Trail: false
-              Value: true
-            alpha_detector_mount:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-              Value: true
             alpha_detector_sensing_frame:
               Alpha: 1
               Show Axes: false
@@ -162,6 +155,10 @@ Visualization Manager:
               Show Axes: false
               Show Trail: false
               Value: true
+            barcode_scanner:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
             base_link:
               Alpha: 1
               Show Axes: false
@@ -261,68 +258,6 @@ Visualization Manager:
               Alpha: 1
               Show Axes: false
               Show Trail: false
-            realsense_accel_frame:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            realsense_accel_optical_frame:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            realsense_bottom_screw_frame:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            realsense_color_frame:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            realsense_color_optical_frame:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            realsense_depth_frame:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            realsense_depth_optical_frame:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            realsense_gyro_frame:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            realsense_gyro_optical_frame:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            realsense_infra1_frame:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            realsense_infra1_optical_frame:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            realsense_infra2_frame:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            realsense_infra2_optical_frame:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            realsense_link:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-              Value: true
-            realsense_mount:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-              Value: true
             rear_left_ee:
               Alpha: 1
               Show Axes: false
@@ -385,6 +320,16 @@ Visualization Manager:
               Show Axes: false
               Show Trail: false
             rl_kit_wire_housing_box:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            scanner_assembly:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
+            spot_gripper_mount:
               Alpha: 1
               Show Axes: false
               Show Trail: false
@@ -536,323 +481,6 @@ Visualization Manager:
               Expand Link Details: false
               Expand Tree: false
               Link Tree Style: Links in Alphabetic Order
-              alpha_counter_enclosure_base:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              alpha_detector:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              alpha_detector_mount:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              alpha_detector_sensing_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              arm0.link_wr1:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              arm0_base_link:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              arm0_elbow_pitch:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              arm0_elbow_roll:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              arm0_fingers:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              arm0_hand:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              arm0_mounting_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              arm0_shoulder_pitch:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              arm0_shoulder_roll:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              arm0_shoulder_yaw:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              arm0_tool0:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              arm0_wrist_pitch:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              arm0_wrist_roll:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              base_link:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              battery:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              body:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              camera_back:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              camera_frontleft:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              camera_frontright:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              camera_left:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              camera_right:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              front_left_ee:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              front_left_hip:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              front_left_lower_leg:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              front_left_upper_leg:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              front_rail:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              front_right_ee:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              front_right_hip:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              front_right_lower_leg:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              front_right_upper_leg:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              hand_color_image_sensor:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              hand_depth_sensor:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              hand_rgb:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              hand_tof:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              imu:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              payload_mount_reference_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_accel_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_accel_optical_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_bottom_screw_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_color_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_color_optical_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_depth_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_depth_optical_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_gyro_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_gyro_optical_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_infra1_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_infra1_optical_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_infra2_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_infra2_optical_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              realsense_link:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              realsense_mount:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              rear_left_ee:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              rear_left_hip:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              rear_left_lower_leg:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              rear_left_upper_leg:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              rear_rail:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              rear_right_ee:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              rear_right_hip:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              rear_right_lower_leg:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              rear_right_upper_leg:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              rl_kit_elevated_lidar_mount:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              rl_kit_gxp_interface:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              rl_kit_jetson_housing_box:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              rl_kit_reference_frame:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-              rl_kit_wire_housing_box:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              velodyne:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
-              velodyne_base_link:
-                Alpha: 1
-                Show Axes: false
-                Show Trail: false
-                Value: true
             Robot Alpha: 1
             Show Robot Collision: false
             Show Robot Visual: false
@@ -1260,7 +888,7 @@ Visualization Manager:
             Filter size: 10
             History Policy: Keep Last
             Reliability Policy: Reliable
-            Value: /rfid_survey_behavior_tree/navigation_target
+            Value: /survey_behavior_tree/navigation_target
           Value: true
         - Alpha: 1
           Axes Length: 1
@@ -1536,7 +1164,7 @@ Visualization Manager:
             Filter size: 10
             History Policy: Keep Last
             Reliability Policy: Reliable
-            Value: /rfid_survey_behavior_tree/scan_path
+            Value: /barcode_calibration_poses/all
           Value: true
         - Alpha: 1
           Arrow Length: 0.30000001192092896
@@ -1557,10 +1185,44 @@ Visualization Manager:
             Filter size: 10
             History Policy: Keep Last
             Reliability Policy: Reliable
-            Value: /rfid_calibration_poses/all
+            Value: /survey_behavior_tree/scan_path
           Value: true
       Enabled: true
       Name: Inventory Discovery
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz_default_plugins/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: ""
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 4096
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: PointCloud2
+      Position Transformer: ""
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.05000000074505806
+      Style: Flat Squares
+      Topic:
+        Depth: 5
+        Durability Policy: Transient Local
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Value: /inventory/rack_face_cloud
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -1607,35 +1269,35 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 2.755272388458252
+      Distance: 2.559126138687134
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 1.0124754905700684
-        Y: -0.4438984990119934
-        Z: 1.3926808151154546e-07
+        X: -0.03320932388305664
+        Y: 3.0021920204162598
+        Z: -1.6488711480633356e-06
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.33479657769203186
+      Pitch: 0.07479680329561234
       Target Frame: survey
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 3.9192144870758057
+      Yaw: 4.004216194152832
     Saved: ~
 Window Geometry:
   Displays:
-    collapsed: true
+    collapsed: false
   Height: 1043
-  Hide Left Dock: true
+  Hide Left Dock: false
   Hide Right Dock: true
   Image:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd0000000400000000000002020000035dfc020000000ffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000005fb0000043800000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afc0000003b0000035d0000000000fffffffaffffffff0100000002fb0000000a0049006d0061006700650000000000ffffffff0000005a00fffffffb000000100044006900730070006c0061007900730000000000000002420000015600fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb000000280020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb000000280020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb0000001c004d006f00740069006f006e0050006c0061006e006e0069006e00670100000327000001bc0000000000000000fb0000000a0049006d0061006700650000000235000000960000000000000000fb0000000a0049006d00610067006501000002d1000000c70000000000000000fb0000000a0049006d00610067006500000002a5000000f30000000000000000fb0000000a0049006d00610067006501000002d1000000c70000000000000000000000010000015f0000035dfc0200000004fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000003b000000a4000000a000fffffffb0000001200530065006c0065006300740069006f006e00000000e5000002b30000005c00fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000003c00000005afc0100000002fb0000000800540069006d00650100000000000003c00000025300fffffffb0000000800540069006d00650100000000000004500000000000000000000003c00000035d00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000400000000000002020000035dfc020000000ffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000005fb0000043800000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afc0000003b0000035d000000c700fffffffa000000010100000002fb0000000a0049006d0061006700650000000000ffffffff0000005a00fffffffb000000100044006900730070006c0061007900730100000000000002420000015600fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb000000280020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb000000280020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb0000001c004d006f00740069006f006e0050006c0061006e006e0069006e00670100000327000001bc0000000000000000fb0000000a0049006d0061006700650000000235000000960000000000000000fb0000000a0049006d00610067006501000002d1000000c70000000000000000fb0000000a0049006d00610067006500000002a5000000f30000000000000000fb0000000a0049006d00610067006501000002d1000000c70000000000000000000000010000015f0000035dfc0200000004fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000003b000000a4000000a000fffffffb0000001200530065006c0065006300740069006f006e00000000e5000002b30000005c00fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000003c00000005afc0100000002fb0000000800540069006d00650100000000000003c00000025300fffffffb0000000800540069006d00650100000000000004500000000000000000000001b80000035d00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: true
   Time:

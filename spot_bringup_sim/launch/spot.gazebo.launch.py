@@ -44,6 +44,36 @@ def generate_launch_description():
             }.items(),
     )
 
+    # Dedicated /clock bridge: isolated from the sensor bridge below so clock
+    # messages never queue behind pointcloud/image serialization. Keeping them
+    # in one process caused sim-time stutter that scaled with node count.
+    # No use_sim_time here — this process is the *source* of ROS time.
+    clock_bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        name='clock_bridge',
+        output='screen',
+        arguments=['/clock@rosgraph_msgs/msg/Clock[ignition.msgs.Clock'],
+    )
+
+    # Dedicated control/state bridge: joint commands out, joint states and
+    # odometry back — the robot's control loop. Same isolation rationale as
+    # the clock bridge: sharing a process with the pointcloud/image bridge
+    # made these small high-rate messages arrive in bursts behind sensor
+    # serialization, stuttering the legs and desyncing odom from joint states.
+    state_bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        name='state_bridge',
+        output='screen',
+        parameters=[{
+            'use_sim_time': True,
+            'config_file': os.path.join(
+                get_package_share_directory('spot_bringup_sim'),
+                'config', 'spot_state_bridge.yaml'),
+        }],
+    )
+
     # Bridge ROS topics and Gazebo messages for establishing communication
     pkg_spot_bringup = get_package_share_directory('spot_bringup_sim')
     bridge = Node(
@@ -70,7 +100,9 @@ def generate_launch_description():
         parameters=[
             {'use_sim_time': True},
             {'robot_description': robot_desc},
-            {"publish_frequency": 200.0},
+            # Matches the gz JointStatePublisher update_rate (model.sdf.xacro);
+            # RSP just re-broadcasts joint states as TF.
+            {"publish_frequency": 100.0},
         ],
         remappings=[
             ('/joint_states', '/spot_driver/joint_states'),
@@ -104,6 +136,11 @@ def generate_launch_description():
             {"publish_joint_states": False},
             {"publish_foot_contacts": True},
             {"publish_joint_control": True},
+            # 100 Hz (code default is 200): halves command traffic through the
+            # state bridge. The gz JTC's PID still runs at the 1 kHz physics
+            # rate — this only sets how often the target updates. The
+            # controller's time_from_start tracks loop_period automatically.
+            {"loop_rate": 100.0},
             {"joint_controller_topic": "/spot/joint_trajectory"},
             {"urdf": urdf_file},
             links_param,
@@ -306,6 +343,8 @@ def generate_launch_description():
         rviz_arg,
         rviz_config_file_arg,
         gz_sim,
+        clock_bridge,
+        state_bridge,
         bridge,
         robot_state_publisher,
         quadruped_controller_node,
