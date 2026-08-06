@@ -404,10 +404,10 @@ Visualization Manager:
           Color: 255; 255; 255
           Color Transformer: Intensity
           Decay Time: 0
-          Enabled: false
+          Enabled: true
           Invert Rainbow: false
           Max Color: 255; 255; 255
-          Max Intensity: 44
+          Max Intensity: 1
           Min Color: 0; 0; 0
           Min Intensity: 0
           Name: ObjectSegmentedCloud
@@ -422,10 +422,10 @@ Visualization Manager:
             Filter size: 10
             History Policy: Keep Last
             Reliability Policy: Reliable
-            Value: /alpha_survey_3d/segmented_cloud
+            Value: /inventory/segmented_cloud
           Use Fixed Frame: true
           Use rainbow: true
-          Value: false
+          Value: true
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -481,6 +481,264 @@ Visualization Manager:
               Expand Link Details: false
               Expand Tree: false
               Link Tree Style: Links in Alphabetic Order
+              alpha_detector:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              alpha_detector_sensing_frame:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              arm0.link_wr1:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              arm0_base_link:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              arm0_elbow_pitch:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              arm0_elbow_roll:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              arm0_fingers:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              arm0_hand:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              arm0_mounting_frame:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              arm0_shoulder_pitch:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              arm0_shoulder_roll:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              arm0_shoulder_yaw:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              arm0_tool0:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              arm0_wrist_pitch:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              arm0_wrist_roll:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              barcode_scanner:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              base_link:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              battery:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              body:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              camera_back:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              camera_frontleft:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              camera_frontright:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              camera_left:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              camera_right:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              front_left_ee:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              front_left_hip:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              front_left_lower_leg:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              front_left_upper_leg:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              front_rail:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              front_right_ee:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              front_right_hip:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              front_right_lower_leg:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              front_right_upper_leg:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              hand_color_image_sensor:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              hand_depth_sensor:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              hand_rgb:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              hand_tof:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              imu:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              payload_mount_reference_frame:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              rear_left_ee:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              rear_left_hip:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              rear_left_lower_leg:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              rear_left_upper_leg:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              rear_rail:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              rear_right_ee:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              rear_right_hip:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              rear_right_lower_leg:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              rear_right_upper_leg:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              rl_kit_elevated_lidar_mount:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              rl_kit_gxp_interface:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              rl_kit_jetson_housing_box:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              rl_kit_reference_frame:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+              rl_kit_wire_housing_box:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              scanner_assembly:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              spot_gripper_mount:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              velodyne:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
+              velodyne_base_link:
+                Alpha: 1
+                Show Axes: false
+                Show Trail: false
+                Value: true
             Robot Alpha: 1
             Show Robot Collision: false
             Show Robot Visual: false
@@ -1199,7 +1457,7 @@ Visualization Manager:
       Channel Name: intensity
       Class: rviz_default_plugins/PointCloud2
       Color: 255; 255; 255
-      Color Transformer: ""
+      Color Transformer: Intensity
       Decay Time: 0
       Enabled: true
       Invert Rainbow: false
@@ -1208,7 +1466,7 @@ Visualization Manager:
       Min Color: 0; 0; 0
       Min Intensity: 0
       Name: PointCloud2
-      Position Transformer: ""
+      Position Transformer: XYZ
       Selectable: true
       Size (Pixels): 3
       Size (m): 0.05000000074505806
@@ -1269,7 +1527,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 2.559126138687134
+      Distance: 4.350651264190674
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -1284,10 +1542,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.07479680329561234
+      Pitch: 0.554796576499939
       Target Frame: survey
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 4.004216194152832
+      Yaw: 4.789212226867676
     Saved: ~
 Window Geometry:
   Displays:
