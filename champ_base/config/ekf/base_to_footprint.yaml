@@ -3,12 +3,12 @@ base_to_footprint_ekf:
     # 50 Hz sim-time needs 50 * RTF wall cycles/sec — unreachable at high RTF
     # and the source of "Failed to meet update rate" spam. 30 Hz is enough for
     # base-to-footprint and keeps up to ~RTF 4.
-    frequency: 30.0
+    frequency: 50.0
     publish_tf: true
     transform_timeout: 0.01
     # Future-date the TF so lookups don't see it as stale during the larger
     # sim-time gaps between EKF cycles at high RTF.
-    transform_time_offset: 0.15
+    transform_time_offset: 0.045
     two_d_mode: false
     # diagnostics_agg: true
 
