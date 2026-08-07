@@ -1,34 +1,4 @@
 <?xml version="1.0"?>
-<!--
-  barcode_calibration.sdf
-
-  rfid_calibration.sdf with the RFID tags and RfidReader replaced by ONE
-  generated barcode label and the BarcodeScanner plugin (barcode_refactor_plan
-  §3.2, §9.1 in inventory_tracking). Room, lights, plate, AprilTag and Spot are
-  unchanged; the fiducial rig is shared between the two calibrations on purpose.
-
-  LABEL POSE DERIVATION (world), for the latched-fiducial values in
-  inventory_tracking/config/barcode_calibration_params.yaml:
-    Plate at (2.0, 0, 0, yaw -1.5708): tag face plane lands at world x = 1.4845,
-    fiducial origin (AprilTag centre) at world (1.4845, 0, 0.85).
-    Latched frame: +X up the plate, +Y robot's left, +Z out of the plate.
-    Label CENTRE (the plugin gates on the model origin) sits at
-      world (1.4803, -0.14, 0.85)
-    = fiducial [0.0, -0.14, 0.0042]: mid-height (the RFID target tag's spot,
-    same reach argument), 0.14 m to the robot's right, substrate centre
-    TAG_T/2 + 1 mm = 4.2 mm proud of the tag face plane.
-    Substrate spans world x 1.4771..1.4835, entirely in front of the plate
-    face at 1.485, so a beam from the robot reaches it without entering the
-    occluder volume below.
-
-  MOUNT BLOCK: all three lines (<link>, <pose>, <parent_frame>) must stay
-  equal to inventory_tracking/urdf/barcode_scanner.xacro's measured
-  exit-window pose (0.10473 0.0049 -0.1117 off arm0_hand, measured
-  2026-07-31 — no longer the alpha-bore co-located value).
-  The plugin's code defaults are link=arm0_hand with an IDENTITY mountPose, so
-  omitting the override silently models the scanner ~12 cm and ~14 cm off the
-  exit window (plan §5.3). This block is a CHECKED ITEM, not boilerplate.
--->
 <sdf version="1.9">
   <world name="barcode_calibration">
 
@@ -75,11 +45,6 @@
        <temperature_gradient>0.2</temperature_gradient>
     </atmosphere>
 
-    <!-- Two lights, same reasoning as rfid_calibration.sdf: the AprilTag is
-         read by a camera and a single raking light blows out or shadows the
-         quad. Doubly relevant here - the label texture is also camera-visible
-         and a specular highlight across the bars is exactly what stops a real
-         scanner decoding (the print visual is matte for the same reason). -->
     <light type="directional" name="sun">
       <pose>0 0 10 0 0 0</pose>
       <diffuse>0.8 0.8 0.8 1</diffuse>
@@ -230,7 +195,7 @@
     <!-- ===================== SPOT ===================== -->
 
     <model name="spot">
-        <pose>-0.3 0.0 0.7 0 0 0</pose>
+        <pose>-0.6 0.0 0.7 0 0 0</pose>
         <include merge="true">
             <uri>package://spot_description_sim/models/spot</uri>
         </include>
@@ -284,23 +249,13 @@
             <size>0.60 1.02 1.85</size>
           </occluder>
 
-          <!-- Exit window: MEASURED 2026-07-31 against the seated clamshell
-               CAD; equal to inventory_tracking/urdf/barcode_scanner.xacro
-               (which see) and no longer the alpha-bore co-located value
-               server_room.sdf still carries. The two files must stay equal
-               (plan §5.3): the plugin's defaults silently model the scanner
-               at the arm0_hand origin, and a wrong <link> warns once and
-               then never decodes. -->
           <link>arm0_hand</link>
           <pose>0.10473 0.0049 -0.1117 0 0 0</pose>
           <parent_frame>arm0_hand</parent_frame>
         </plugin>
     </model>
 
-    <!-- ===================== RACK + CALIBRATION PLATE =====================
-         Identical placement to rfid_calibration.sdf: ~2 m in front of Spot
-         along +X, yaw -1.5708 turns the model's -Y front face toward the
-         robot; plate face lands at x = 1.485, tag plane at 1.4845. -->
+    <!-- ===================== RACK + CALIBRATION PLATE ===================== -->
     <include>
       <name>calibration_plate_model</name>
       <uri>model://calibration_plate_model</uri>

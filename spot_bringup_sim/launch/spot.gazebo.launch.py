@@ -39,7 +39,7 @@ def generate_launch_description():
             launch_arguments={
                 'gz_args': [
                     PathJoinSubstitution([pkg_spot_gazebo, 'worlds', world_file]),
-                    # ' -s -r --headless-rendering',
+                    ' -s -r --headless-rendering',
                 ],
             }.items(),
     )
@@ -136,10 +136,6 @@ def generate_launch_description():
             {"publish_joint_states": False},
             {"publish_foot_contacts": True},
             {"publish_joint_control": True},
-            # 100 Hz (code default is 200): halves command traffic through the
-            # state bridge. The gz JTC's PID still runs at the 1 kHz physics
-            # rate — this only sets how often the target updates. The
-            # controller's time_from_start tracks loop_period automatically.
             {"loop_rate": 100.0},
             {"joint_controller_topic": "/spot/joint_trajectory"},
             {"urdf": urdf_file},

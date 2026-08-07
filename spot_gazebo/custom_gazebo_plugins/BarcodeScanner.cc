@@ -188,7 +188,7 @@
  *     <!-- Exit window pose. Boresight is +X, the scan line sweeps in the
  *          scanner XY plane, bar height is measured along scanner Z. -->
  *     <link>arm0_hand</link>
- *     <pose>0.11873 0 -0.136 0 0 0</pose>
+ *     <pose>0.10473 0.0049 -0.1117 0 0 0</pose>
  *     <parent_frame>arm0_hand</parent_frame>      ROS parent for TF
  *
  *     <!-- Depth of field for the density you actually printed. A 7-character
@@ -947,10 +947,28 @@ class BarcodeScanner
 
         // Roll: angle between the swept line and the symbol's long axis,
         // measured in the label plane. This is the axis the short bars punish.
-        const ignition::math::Vector3d lineDir =
-            ignition::math::Vector3d::UnitY;     // sweep direction, scanner Y
+        //
+        // The trace is the INTERSECTION of the scan plane with the label plane,
+        // not a projection of any single ray. Every ray of the sweep lies in
+        // the scanner z = 0 plane (boresight +X, sweep in XY), so the whole
+        // family of rays meets the label plane along one line, whose direction
+        // is Zhat_scanner x nrm. This is exact.
+        //
+        // The previous form projected scanner +Y into the label plane. That
+        // agrees with the line above only when nrm_y or nrm_z is zero — i.e.
+        // pure skew or pure pitch, which is why it survived single-axis
+        // testing. With BOTH nonzero the projected vector leaves the scan
+        // plane and the error is atan2-scale, not second order:
+        //     pitch 30 deg, skew 10 deg  ->  5.1 deg of roll error
+        //     pitch 65 deg, skew 10 deg  ->  9.1 deg
+        // Against the 6.52 deg <auto_roll_limit> that exceeds the entire
+        // budget, so the gate mis-decided in both directions and every
+        // combined-axis mRoll was wrong with it.
         const ignition::math::Vector3d lineInPlane =
-            (lineDir - nrm * lineDir.Dot(nrm));
+            ignition::math::Vector3d::UnitZ.Cross(nrm);
+        // Degenerate only if nrm is parallel to scanner Z — a label facing
+        // straight up or down, where the scan plane never crosses it. The
+        // cosInc <= 0 test above already turns away most of that case.
         double roll = 0.0;
         if (lineInPlane.Length() > 1e-9)
         {
