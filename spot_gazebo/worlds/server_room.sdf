@@ -329,44 +329,7 @@
         <include merge="true">
             <uri>package://spot_description_sim/models/spot</uri>
         </include>
-
-        <!-- Zebra Symbol LS2208 1-D laser scanner, mounted where the RFID
-             antenna used to be. This world reads BARCODES; the RFID reader
-             worlds (server_rack_rfid.sdf, rfid_calibration.sdf) are unchanged
-             and still exercise RfidReader.
-
-             Datasheet: Motorola "Symbol LS2208 Specification Sheet",
-             SS-LS2208, 12/08 — the sheet for LS2208-SR20007R-UR.
-
-             VERBATIM FROM THE SHEET
-               update_rate      100 scans/sec typical
-               print_contrast   20% minimum reflective difference
-               roll_limit       +/- 30 deg
-               pitch_limit      +/- 65 deg
-               skew_limit       +/- 60 deg
-               dof_near/far     0.0381 - 0.2540 m, i.e. the Code 39 7.5 mil
-                                row (1.50" - 10.00") converted from the
-                                authoritative inch column. The sheet has no
-                                Code 128 row; depth of field follows the narrow
-                                element width, not the symbology.
-
-             SET BY OUR LABEL, AND THESE ARE THE ONES THAT ACTUALLY BIND
-               dof_near/dof_far 7.5 mil is forced by fitting a 7-hex-digit
-                                Code 128 symbol (132 modules incl. quiet
-                                zones) into the 28 mm print area. A 4x
-                                reduction from the RFID reader's 1.0 m
-                                max_range, and the single biggest behavioural
-                                change: the arm has to get within 25 cm.
-               auto_roll_limit  Derives roll from the printed symbol as
-                                atan((3.0 + 0.2) / 25.146) = 7.25 deg,
-                                overriding the sheet's +/-30 deg. Short bars,
-                                not the scanner, are the limit. Expect this to
-                                dominate aiming.
-
-             NOT IN THE DATASHEET — scan_halfangle, beam_spot and rescan_delay
-             are absent from both the 12/08 and 04/15 revisions. See the
-             "NOT IN THE DATASHEET" block in BarcodeScanner.cc before quoting
-             any of them as a specification. -->
+        
         <plugin filename="BarcodeScanner" name="barcode::BarcodeScanner">
           <scanner_id>ls2208</scanner_id>
           <label_prefix>barcode_label_</label_prefix>
@@ -379,19 +342,16 @@
 
           <publish_tf>true</publish_tf>
           <tf_topic>/barcode/tf</tf_topic>
-
-          <dof_near>0.0381</dof_near>
-          <dof_far>0.2540</dof_far>
-
-          <symbol_width>0.0252</symbol_width>
+          <dof_near>0.04440</dof_near>
+          <dof_far>0.50873</dof_far>
+          <symbol_width>0.028</symbol_width>
           <symbol_height>0.003</symbol_height>
           <beam_spot>0.0002</beam_spot>
-
           <scan_halfangle>17.5</scan_halfangle>
           <auto_roll_limit>true</auto_roll_limit>
-          <roll_limit>30</roll_limit>
+          <roll_limit>60</roll_limit>
           <pitch_limit>65</pitch_limit>
-          <skew_limit>60</skew_limit>
+          <skew_limit>10</skew_limit>
           <specular_deadzone>0</specular_deadzone>
 
           <print_contrast>0.20</print_contrast>

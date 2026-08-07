@@ -313,19 +313,16 @@
 
           <publish_tf>true</publish_tf>
           <tf_topic>/barcode/tf</tf_topic>
-
-          <dof_near>0.0381</dof_near>
-          <dof_far>0.2540</dof_far>
-
-          <symbol_width>0.0252</symbol_width>
+          <dof_near>0.04440</dof_near>
+          <dof_far>0.50873</dof_far>
+          <symbol_width>0.028</symbol_width>
           <symbol_height>0.003</symbol_height>
           <beam_spot>0.0002</beam_spot>
-
           <scan_halfangle>17.5</scan_halfangle>
           <auto_roll_limit>true</auto_roll_limit>
-          <roll_limit>30</roll_limit>
+          <roll_limit>60</roll_limit>
           <pitch_limit>65</pitch_limit>
-          <skew_limit>60</skew_limit>
+          <skew_limit>10</skew_limit>
           <specular_deadzone>0</specular_deadzone>
 
           <print_contrast>0.20</print_contrast>

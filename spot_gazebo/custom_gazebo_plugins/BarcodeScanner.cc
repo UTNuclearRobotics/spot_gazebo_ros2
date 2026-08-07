@@ -6,9 +6,9 @@
  * --------------------------------------
  * RfidReader models an RF link: a broad lobe, graded path loss, many tags per
  * interrogation cycle, probabilistic reads that improve with dwell and power.
- * The LS2208 is a 650 nm visible laser diode sweeping a single line at 100
- * scans/sec (50 Hz scan element). Consequences that drive every design choice
- * below:
+ * The LS2208 is a 650 nm Class 2 laser diode sweeping a single line at 100
+ * scans/sec over a 35 deg scan angle. Consequences that drive every design
+ * choice below:
  *
  *   1. ONE decode per trigger pull. The scanner is an input device: it emits a
  *      single string and stops. It does NOT enumerate everything in view. An
@@ -23,51 +23,118 @@
  *      and for a short-bar label ROLL IS SET BY LABEL ASPECT RATIO, not by the
  *      datasheet. See <auto_roll_limit>.
  *
- * DATASHEET — Motorola "Symbol LS2208 Specification Sheet", part no.
- * SS-LS2208, printed 12/08, (c) 2007. This is the sheet shipped with
- * LS2208-SR20007R-UR. The later Zebra-branded revision (SS-LS2208, 04/15) is
- * identical in every Performance Characteristic below; it differs only in
- * weight (150 g vs 146 g), interface list and ambient-light wording, none of
- * which this plugin models.
+ * DATASHEET — Zebra "LS2208 Handheld Scanner Product Spec Sheet", part no.
+ * SS-LS2208, 10/2015. THIS IS THE AUTHORITATIVE SOURCE for every value below.
+ *
+ *   An earlier draft of this plugin was sourced from the Motorola-branded
+ *   sheet (SS-LS2208, 12/08, (c) 2007) shipped with LS2208-SR20007R-UR, and
+ *   asserted that the two revisions were "identical in every Performance
+ *   Characteristic". THAT WAS WRONG. The revisions disagree on the orientation
+ *   tolerances and on the entire depth-of-field table:
+ *
+ *                       12/08 (superseded)      10/2015 (current)
+ *     Roll (tilt)       +/- 30 deg              +/- 60 deg
+ *     Skew (yaw)        +/- 60 deg              +/- 10 deg
+ *     Pitch             +/- 65 deg              +/- 65 deg   (unchanged)
+ *     Scan angle        not stated              35 deg       (now stated)
+ *     DOF rows          5 / 7.5 / 10 / 20 / 40  3 / 4 / 5 / 7.5 / 20 / 40 mil
+ *                       mil + 13 mil UPC        + 13 mil UPC
+ *
+ *   Roll and skew are very nearly transposed between the two, so a file
+ *   carrying 30/60 is not merely stale, it gates the WRONG AXIS. Skew
+ *   tightening 60 -> 10 deg is the single largest behavioural change: with the
+ *   exponent-4 skew term in the margin, off-boresight approaches that used to
+ *   decode reliably now fail outright.
  *
  *   Scanner type        Bi-directional
- *   Light source        650 nm visible laser diode
- *   Scan element freq.  50 Hz          Scan rate  100 scans/sec typical
+ *   Light source        650 nm Laser Diode Class 2
+ *   Scan pattern        Single line
+ *   Scan rate           100 scans/sec
+ *   Scan angle          35 deg
  *   Print contrast      20% minimum reflective difference
- *   Roll (tilt)         +/- 30 deg
- *   Pitch               +/- 65 deg
- *   Skew (yaw)          +/- 60 deg
+ *   Skew tolerance      +/- 10 deg
+ *   Pitch tolerance     +/- 65 deg
+ *   Roll tolerance      +/- 60 deg
+ *   Min element res.    Code 39: 3.0 mil   (stated, but not modelled: the
+ *                       plugin has no concept of module width beyond the
+ *                       <beam_spot> vs narrow-module check you make by hand)
  *   Decode capability   includes Code 128 and Code 128 Full ASCII
- *   Depth of field      Code 39  5   mil   2.50" - 6.00"    0.0635 - 0.1524 m
- *                       Code 39  7.5 mil   1.50" - 10.00"   0.0381 - 0.2540 m
- *                       Code 39  10  mil   1.00" - 14.25"   0.0254 - 0.3620 m
- *                       100% UPC 13  mil   0    - 17.00"    0      - 0.4318 m
- *                       Code 39  20  mil   0    - 23.00"    0      - 0.5842 m
- *                       Code 39  40  mil   0    - 30.00"    0      - 0.7620 m
+ *   Depth of field      Code 39  3   mil   1.6" -  4.8"   0.0406 - 0.1219 m
+ *                       Code 39  4   mil   1.3" -  8.7"   0.0330 - 0.2210 m
+ *                       Code 39  5   mil   0.9" - 11.7"   0.0229 - 0.2972 m
+ *                       Code 39  7.5 mil   0.1" - 19.1"   0.0025 - 0.4851 m
+ *                       100% UPC 13  mil   0    - 25.1"   0      - 0.6375 m
+ *                       Code 39  20  mil   0    - 33.8"   0      - 0.8585 m
+ *                       Code 39  40  mil   1"   - 43.1"   0.0254 - 1.0947 m
  *
  *   Metric values above are converted from the inch column, which is
- *   authoritative. The sheet's own metric column has two errors, both present
- *   in the 12/08 and 04/15 revisions alike: the 10 mil far limit reads
- *   "14.25 cm" (14.25 in is 36.2 cm), and the 5 mil near limit reads "6 cm"
- *   (2.50 in is 6.35 cm). The 5 mil English cell is also typeset "2-50"".
+ *   authoritative. Unlike the 12/08 sheet — whose metric column carried two
+ *   transcription errors (10 mil far "14.25 cm" for 36.2 cm; 5 mil near "6 cm"
+ *   for 6.35 cm) — the 10/2015 metric column agrees with the inch column to
+ *   the rounding in every row. The 10 mil row is simply gone; do not
+ *   interpolate one, pick the printed density you actually use.
+ *
+ *   The 40 mil near limit really is 1", larger than the 20 mil row's 0". That
+ *   is what the sheet says; it is not a typo we are correcting.
  *
  *   The table gives no Code 128 row. Depth of field is governed by the narrow
- *   element width, not the symbology, so the Code 39 7.5 mil row is the right
- *   one to use for a 7.5 mil Code 128 symbol — but it IS a substitution, and
- *   it is the reason <dof_near>/<dof_far> are exposed rather than hard-coded.
+ *   element width, not the symbology, so a Code 39 row may be read across to a
+ *   Code 128 symbol of the same X dimension — but it IS a substitution, and it
+ *   is the reason <dof_near>/<dof_far> are exposed rather than hard-coded.
+ *
+ *   WE DO NOT SHIP ANY ROW OF THIS TABLE. Our printed symbol measures 28.0 mm
+ *   first bar to last bar including quiet zones, over 132 modules, giving an X
+ *   dimension of 28.0/132 = 0.2121 mm = 8.35 mil. There is no 8.35 mil row.
+ *   The defaults are therefore DERIVED, and both differ from the sheet:
+ *
+ *     <dof_far>  0.50873 m. Linear interpolation between the 7.5 mil row
+ *                (19.1") and the 13 mil UPC row (25.1"):
+ *                  19.1 + (25.1-19.1)*(8.3512-7.5)/(13-7.5) = 20.03"
+ *                Crossing a Code 39 row with a UPC row is defensible only
+ *                because DOF tracks the narrow element width, not the
+ *                symbology — the same argument that licenses the Code 128
+ *                substitution above. It is still an interpolation, not a spec.
+ *
+ *     <dof_near> 0.04440 m, and NOT the sheet's 0.1" (0.00254 m). The sheet's
+ *                near limits are measured with a short test symbol. A laser
+ *                scanner must sweep the ENTIRE symbol, quiet zones included,
+ *                within one pass, and the 35 deg scan angle spans only
+ *                  2 * d * tan(17.5 deg) = 0.6306 * d
+ *                so a 28 mm code needs 0.028/0.6306 = 0.0444 m of standoff
+ *                before both ends are in the line at once. Closer than that
+ *                the hardware cannot read it at any orientation.
+ *
+ *                THE PLUGIN DOES NOT MODEL THIS DIRECTLY. The horizontal gate
+ *                tests the label ORIGIN against <scan_halfangle>; it never
+ *                checks that the symbol's projected width fits inside the
+ *                sweep. <dof_near> is standing in for that missing gate, which
+ *                is why it is a geometry-derived number and not a datasheet
+ *                one. Two consequences: (a) recompute it whenever
+ *                <symbol_width> or <scan_halfangle> changes, and (b) it is
+ *                only correct on boresight — a wide symbol sitting near the
+ *                edge of the sweep needs more standoff than this, and the
+ *                plugin will not catch that. If that case starts to matter,
+ *                add a real width gate rather than inflating <dof_near>.
  *
  * NOT IN THE DATASHEET — do not cite these as spec values
- *   <scan_halfangle>    The sheet states no scan angle, in either revision.
- *                       17.5 deg (a 35 deg sweep) is the figure commonly
- *                       quoted for this Symbol scan engine, NOT a
- *                       manufacturer specification for this part. It gates
- *                       only how far off-boresight a label may sit; measure it
- *                       against the real unit before trusting any result that
- *                       turns on it.
+ *   <symbol_width>, <symbol_height>
+ *                       Properties of OUR printed label, not the scanner.
+ *                       They set the auto roll limit; see <auto_roll_limit>.
  *   <beam_spot>         Not specified. 0.2 mm is derived from the requirement
- *                       that the spot resolve one 7.5 mil narrow module
- *                       (0.1905 mm). It widens the vertical acceptance band
- *                       and the roll limit, so it is not cosmetic.
+ *                       that the spot resolve one narrow module. At the
+ *                       measured 8.3512 mil that module is 0.21212 mm, so
+ *                       0.2 mm fits with about 5.7% to spare.
+ *
+ *                       NOTE this rule was VIOLATED under the old 7.5 mil
+ *                       assumption, where the module was 0.1905 mm and the
+ *                       0.2 mm spot was 5% WIDER than the element it was
+ *                       supposed to resolve. Nobody noticed because the
+ *                       plugin never enforces the relation — it is a
+ *                       hand-checked invariant, not an assertion. Re-check it
+ *                       by hand whenever <symbol_width> changes.
+ *
+ *                       It widens the vertical acceptance band and the roll
+ *                       limit, so it is not cosmetic.
  *   <rescan_delay>      Not a spec-sheet value. The re-read timeout is a
  *                       host-programmable parameter ("Timeout Between Decodes,
  *                       Same Symbol") documented in the Product Reference
@@ -79,10 +146,10 @@
  *                       datasheet figure; what the simulated label stock
  *                       achieves is our choice.
  *
- *   Ambient light immunity is specified ("immune to direct exposure of normal
- *   office and factory lighting conditions, as well as direct exposure to
- *   sunlight") and is NOT modelled at all — world lighting has no effect on
- *   decoding here.
+ *   Ambient light immunity is specified — the 10/2015 sheet quantifies it as
+ *   "0 to 8,000 Foot Candles / 0 to 86,080 Lux", where the 12/08 sheet gave
+ *   only prose — and is NOT modelled at all either way. World lighting has no
+ *   effect on decoding here.
  *
  * SDF configuration (attach as a MODEL plugin to the robot):
  *
@@ -124,22 +191,34 @@
  *     <pose>0.11873 0 -0.136 0 0 0</pose>
  *     <parent_frame>arm0_hand</parent_frame>      ROS parent for TF
  *
- *     <!-- Depth of field for the density you actually printed. Defaults are
- *          the 7.5 mil row, which is what a 7-character Code 128 Subset B
- *          payload needs to fit a 28 mm print area:
+ *     <!-- Depth of field for the density you actually printed. A 7-character
+ *          Code 128 Subset B payload is
  *            11*7 data + 11 start + 11 check + 13 stop  = 112 modules
  *            + 10 modules quiet zone each side          = 132 modules
- *            132 * 0.1905 mm = 25.15 mm   (10 mil would need 33.5 mm) -->
- *     <dof_near>0.0381</dof_near>
- *     <dof_far>0.2540</dof_far>
+ *          and the measured symbol is 28.0 mm across, so
+ *            X = 28.0 / 132 = 0.2121 mm = 8.35 mil
+ *          Neither default below is a datasheet cell — dof_far interpolates
+ *          the 7.5 and 13 mil rows, dof_near is the scan-line-width floor.
+ *          See the DEPTH OF FIELD discussion in the header block. -->
+ *     <dof_near>0.04440</dof_near>
+ *     <dof_far>0.50873</dof_far>
  *
- *     <!-- Printed SYMBOL extent, including quiet zones. Not the substrate. -->
- *     <symbol_width>0.0252</symbol_width>
+ *     <!-- Printed SYMBOL extent, including quiet zones. Not the substrate,
+ *          and not the generator's PRINT_W, which is only a fit ceiling.
+ *          Measure this: it drives dof_near AND the auto roll limit. -->
+ *     <symbol_width>0.028</symbol_width>
  *     <symbol_height>0.003</symbol_height>
  *
- *     <scan_halfangle>17.5</scan_halfangle>   [deg] half of the 35 deg sweep
+ *     <scan_halfangle>17.5</scan_halfangle>   [deg] half of the datasheet's
+ *                                             35 deg scan angle
  *     <beam_spot>0.0002</beam_spot>           [m] spot diameter; must be <=
- *                                             one narrow module to resolve
+ *                                             one narrow module to resolve.
+ *                                             0.2 mm against a 0.21212 mm
+ *                                             module: 5.7% of headroom. The
+ *                                             old 7.5 mil module was 0.1905
+ *                                             mm, i.e. NARROWER than the spot
+ *                                             — that configuration broke this
+ *                                             rule. Do not raise it.
  *
  *     <auto_roll_limit>true</auto_roll_limit>
  *          Derive the roll limit from label aspect instead of the datasheet.
@@ -147,17 +226,32 @@
  *          across the symbol and must stay inside the bar height, widened by
  *          the beam spot:
  *              atan((symbol_height + beam_spot) / symbol_width)
- *              atan((3.0 + 0.2) / 25.146) = 7.25 deg
- *          (quoted to two places because it lands exactly on the 7.2/7.3
- *          rounding boundary — the generator script prints 7.3)
- *          NOT the +/-30 deg the spec sheet quotes, which assumes a
- *          full-height label. Note the denominator is the 25.2 mm SYMBOL, not
- *          the 28 mm print area — quoting a bare atan(3/28) = 6.1 deg
- *          understates the limit. Set false to use <roll_limit> verbatim.
- *     <roll_limit>30</roll_limit>      [deg] datasheet ceiling; also clamps
+ *              atan((3.0 + 0.2) / 28.0) = 6.52 deg
+ *          NOT the +/-60 deg the spec sheet quotes, which assumes a
+ *          full-height label. Set false to use <roll_limit> verbatim.
+ *
+ *          The denominator is the SYMBOL width including quiet zones. On the
+ *          measured 28 mm label that now coincides with the generator's
+ *          PRINT_W, so the old warning about not confusing the two no longer
+ *          bites — but the two remain different quantities and can diverge
+ *          again the moment the payload length or the mil changes. The beam
+ *          spot in the numerator is what separates 6.52 deg from a bare
+ *          atan(3/28) = 6.12 deg; do not drop it.
+ *
+ *          Because the geometric 6.52 deg is far below either revision's
+ *          datasheet roll figure, the min() means <roll_limit> is INERT while
+ *          auto_roll_limit is true and the label stays short-bar. Correcting
+ *          30 -> 60 therefore changes no decode outcome today; it matters only
+ *          if you set auto_roll_limit false or print a full-height label.
+ *
+ *          Note the 25.146 mm symbol this file used to assume gave 7.25 deg.
+ *          The wider real label is a TIGHTER roll gate, not a looser one:
+ *          a longer symbol means more vertical drift per degree of roll.
+ *     <roll_limit>60</roll_limit>      [deg] datasheet ceiling; also clamps
  *                                      the auto value
  *     <pitch_limit>65</pitch_limit>    [deg]
- *     <skew_limit>60</skew_limit>      [deg]
+ *     <skew_limit>10</skew_limit>      [deg] NOT 60 — see the revision table
+ *                                      above. This one really does bite.
  *
  *     <specular_deadzone>0</specular_deadzone>
  *          [deg] refuse decodes closer than this to normal incidence. Zero for
@@ -340,7 +434,7 @@ class BarcodeScanner
         _sdf->Get<double>("scan_halfangle", 17.5).first;
     this->scanHalfAngle = scanHalf * M_PI / 180.0;
 
-    const double rollLimDeg = _sdf->Get<double>("roll_limit", 30.0).first;
+    const double rollLimDeg = _sdf->Get<double>("roll_limit", 60.0).first;
     this->rollLimit = rollLimDeg * M_PI / 180.0;
     this->autoRollLimit =
         _sdf->Get<bool>("auto_roll_limit", this->autoRollLimit).first;
@@ -365,7 +459,7 @@ class BarcodeScanner
     this->pitchLimit =
         _sdf->Get<double>("pitch_limit", 65.0).first * M_PI / 180.0;
     this->skewLimit =
-        _sdf->Get<double>("skew_limit", 60.0).first * M_PI / 180.0;
+        _sdf->Get<double>("skew_limit", 10.0).first * M_PI / 180.0;
     this->specularDeadzone =
         _sdf->Get<double>("specular_deadzone", 0.0).first * M_PI / 180.0;
 
@@ -411,8 +505,8 @@ class BarcodeScanner
             ignition::math::Pose3d::Zero).first;
         // Default Zero, not One: a missing or misspelt <size> must fail
         // visibly. Defaulting to a unit cube would drop an invisible 1 m
-        // blocker into a 0.254 m depth of field and kill every decode in the
-        // room with no diagnostic at all.
+        // blocker into a depth of field only 0.46 m deep and kill every decode
+        // in the room with no diagnostic at all.
         o.size = e->Get<ignition::math::Vector3d>("size",
             ignition::math::Vector3d::Zero).first;
         if (o.size.X() <= 0.0 || o.size.Y() <= 0.0 || o.size.Z() <= 0.0)
@@ -1022,19 +1116,22 @@ class BarcodeScanner
 
   private: double updateRate{100.0};       ///< scans/sec, datasheet typical
 
-  // Depth of field defaults: Code 39 7.5 mil row, 1.50" - 10.00" exactly.
-  private: double dofNear{0.0381};
-  private: double dofFar{0.2540};
+  // Depth of field defaults for OUR 28 mm / 8.35 mil symbol. Neither is a
+  // datasheet cell: dofFar is interpolated between the 10/2015 sheet's 7.5 mil
+  // and 13 mil rows, and dofNear is the scan-line-width floor 0.028/0.6306,
+  // not the sheet's 0.1". See the header block before changing either.
+  private: double dofNear{0.04440};
+  private: double dofFar{0.50873};
 
-  private: double symbolWidth{0.0252};     ///< printed extent incl. quiet zones
+  private: double symbolWidth{0.028};      ///< printed extent incl. quiet zones
   private: double symbolHeight{0.003};     ///< bar height
   private: double beamSpot{0.0002};        ///< spot diameter at focus
 
   private: double scanHalfAngle{17.5 * M_PI / 180.0};
   private: bool autoRollLimit{true};
-  private: double rollLimit{30.0 * M_PI / 180.0};
+  private: double rollLimit{60.0 * M_PI / 180.0};
   private: double pitchLimit{65.0 * M_PI / 180.0};
-  private: double skewLimit{60.0 * M_PI / 180.0};
+  private: double skewLimit{10.0 * M_PI / 180.0};
   private: double specularDeadzone{0.0};
 
   private: double printContrast{0.20};     ///< datasheet minimum MRD

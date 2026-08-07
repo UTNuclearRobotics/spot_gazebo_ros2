@@ -34,14 +34,41 @@ WHY THE NUMBERS ARE WHAT THEY ARE
   codeword. The assertion in render_label() checks the real output against this
   budget and hard-fails if a future prefix breaks the coincidence.
 
-  At 7.5 mil (0.1905 mm/module) that is 25.15 mm — fits the 28 mm print area
-  with 1.4 mm of margin each side. At 10 mil the bars alone would be 28.4 mm,
-  already over budget before quiet zones. So 7.5 mil is forced, which fixes
-  the LS2208 depth of field at 1.50"-10.00" = 0.0381-0.2540 m (Motorola
-  SS-LS2208 12/08, Code 39 7.5 mil row; the sheet lists no Code 128 row, but
-  depth of field follows the narrow element width, not the symbology). That
-  number is the input to <dof_near>/<dof_far> in the BarcodeScanner plugin
-  block, and it is a big reduction from the 1.0 m the RFID reader had.
+  The physical tag was MEASURED at 28.0 mm first bar to last bar including
+  quiet zones, so 132 modules across 28.0 mm gives
+
+      X = 28.0 / 132 = 0.2121 mm = 8.3512 mil
+
+  This file used to run the derivation backwards — MIL was pinned at 7.5 and
+  the symbol fell out at 25.15 mm inside a 28 mm print area with 1.4 mm of
+  margin each side. That did not match the hardware. SYMBOL_W is now the input
+  and MIL the output; the symbol fills the print area exactly, with the 2.12 mm
+  quiet zones serving as the margin.
+
+  Consequences for the BarcodeScanner plugin block, none of which are datasheet
+  cells any more, because the Zebra SS-LS2208 10/2015 decode-range table has no
+  8.35 mil row:
+
+      <dof_far>   0.50873 m, interpolated between the sheet's 7.5 mil (19.1")
+                  and 13 mil UPC (25.1") rows. Legitimate only because depth of
+                  field follows the narrow element width, not the symbology —
+                  the same argument that lets a Code 39 row stand in for a
+                  Code 128 symbol at all. A 2x reduction from the RFID reader's
+                  1.0 m, where the superseded figures implied 4x.
+      <dof_near>  0.04440 m, NOT the sheet's 0.1"/0.00254 m. The scanner has to
+                  sweep the whole 28 mm symbol in one pass and the 35 deg scan
+                  angle spans 2*d*tan(17.5 deg), so 0.028/0.6306 m is the
+                  closest it can work. The plugin has no scan-line-width gate;
+                  dof_near stands in for one.
+      roll limit  atan((3.0 + 0.2) / 28.0) = 6.52 deg, tighter than the 7.25 deg
+                  the 25.15 mm assumption gave. A LONGER symbol is a tighter
+                  roll gate: more vertical drift per degree.
+
+  Separately, the orientation tolerances came from the superseded Motorola
+  SS-LS2208 12/08 sheet, which has roll and skew very nearly transposed
+  relative to 10/2015 (roll 30 vs 60, skew 60 vs 10). If you are reconciling
+  this script against an older plan document, the plan is the thing that is
+  wrong.
 
 USAGE
   pip install python-barcode pillow pyzbar     # pyzbar also needs libzbar0
@@ -69,12 +96,28 @@ TAG_W = 0.0381        # 1.5"  substrate width,  label local +X
 TAG_H = 0.0127        # 0.5"  substrate height, label local +Z
 TAG_T = 0.00635       # 0.25" substrate thickness, label local Y
 
-PRINT_W = 0.028       # print area width
+PRINT_W = 0.028       # print area width — a FIT CEILING, not the symbol width
 BAR_H = 0.003         # bar height
 
-MIL = 7.5
-MODULE_M = MIL * 0.0254 / 1000.0        # 0.0001905 m
+# MEASURED off a physical tag: 28.0 mm first bar to last bar INCLUDING quiet
+# zones. The printed density follows from this, so SYMBOL_W is the input and
+# MIL is derived. That is the reverse of how this file used to read, when MIL
+# was pinned at 7.5 and the symbol fell out at 25.146 mm — which did not match
+# the hardware. If you re-measure the tag, change SYMBOL_W and nothing else.
+SYMBOL_W = 0.028
+NOMINAL_MODULES = 132                   # 7-hex-digit Code 128 Subset B incl.
+                                        # quiet zones; asserted below against
+                                        # symbol_modules()
+MODULE_M = SYMBOL_W / NOMINAL_MODULES   # 0.00021212 m
+MIL = MODULE_M * 1000.0 / 0.0254        # 8.3512 mil
 MODULES_QUIET = 10                      # per side, Code 128 minimum
+                                        # 10 * 0.2121 = 2.12 mm each side.
+                                        # That is EXACTLY 10X, i.e. exactly the
+                                        # minimum, with no margin. Anything
+                                        # that trims the quiet zone (a tighter
+                                        # SYMBOL_W, a die-cut that clips the
+                                        # substrate) puts the symbol out of
+                                        # spec. Do not reduce this.
 
 # Faceplate is the plane y = -0.50 in the rack frame, and the equipment boxes'
 # front faces land exactly there. Seat the label 1 mm proud of it — the same
@@ -99,7 +142,9 @@ BEAM_SPOT = 0.0002                      # LS2208 spot diameter; must stay <=
 TEXTURE_ROTATE_DEG = 90
 
 PX_PER_MODULE = 4                       # integer => no resampling artefacts
-PX_PER_M = PX_PER_MODULE / MODULE_M     # ~21000 px/m == 21 px/mm
+PX_PER_M = PX_PER_MODULE / MODULE_M     # ~18857 px/m == 18.9 px/mm
+                                        # (was ~21000 at 7.5 mil, so every
+                                        #  texture changes size on regen)
 
 FIRST_ID = 0x031FB00
 LABEL_PREFIX = "barcode_label_"
@@ -142,6 +187,16 @@ def symbol_modules(payload: str) -> int:
     return 11 + 11 * len(payload) + 11 + 13 + 2 * MODULES_QUIET
 
 
+# MODULE_M is derived by dividing the measured SYMBOL_W by NOMINAL_MODULES, so
+# that constant has to agree with the real module count for a 7-digit payload.
+# If a future payload length breaks this, MODULE_M is silently wrong and every
+# label is printed at the wrong density — fail loudly instead.
+assert symbol_modules("0" * 7) == NOMINAL_MODULES, (
+    f"NOMINAL_MODULES={NOMINAL_MODULES} but a 7-character payload needs "
+    f"{symbol_modules('0' * 7)} modules; MODULE_M would be wrong."
+)
+
+
 def roll_limit_deg(payload: str = "0000000") -> float:
     """The scanner's real roll limit, in degrees.
 
@@ -157,12 +212,19 @@ def roll_limit_deg(payload: str = "0000000") -> float:
 def check_fit(payload: str) -> None:
     n = symbol_modules(payload)
     width = n * MODULE_M
-    if width > PRINT_W:
+    # The measured symbol fills PRINT_W exactly, so for the nominal payload
+    # this comparison is an equality. It happens to round-trip cleanly today —
+    # 132 * (0.028/132) == 0.028 exactly in IEEE754 — but that is luck, not a
+    # guarantee, and it would not survive a different NOMINAL_MODULES. The
+    # tolerance makes the nominal case robust rather than accidentally passing.
+    # 1e-9 m is ~200000x smaller than one module, so it cannot mask a real
+    # overflow: going over by even one module is 0.21 mm.
+    if width > PRINT_W + 1e-9:
         raise SystemExit(
             f"Payload {payload!r} needs {n} modules = {width*1000:.2f} mm at "
-            f"{MIL} mil, but the print area is only {PRINT_W*1000:.1f} mm. "
-            f"Shorten the payload or drop to a finer mil (and shorten the "
-            f"depth of field accordingly)."
+            f"{MIL:.4f} mil, but the print area is only {PRINT_W*1000:.1f} mm. "
+            f"Shorten the payload, or re-measure SYMBOL_W and recompute "
+            f"<dof_near>/<dof_far> and the roll limit in the world files."
         )
 
 
@@ -426,8 +488,8 @@ def write_manifest(assets: list[Asset], dry: bool) -> None:
 # Generated by scripts/generate_barcode_labels.py. If you edit a rack, re-run it.
 #
 # barcode      : the Code 128 payload printed on the label, and the ONLY thing
-#                the LS2208 reports. 7 hex digits at {MIL} mil,
-#                {symbol_modules('0000000')} modules = {symbol_modules('0000000')*MODULE_M*1000:.2f} mm wide inside a {PRINT_W*1000:.0f} mm print area.
+#                the LS2208 reports. 7 hex digits at {MIL:.4f} mil,
+#                {symbol_modules('0000000')} modules = {symbol_modules('0000000')*MODULE_M*1000:.2f} mm wide, filling the {PRINT_W*1000:.0f} mm print area.
 #                Budgeted as 7 Subset B codewords; the encoder actually emits a
 #                mixed C-then-B sequence that comes to the same module count.
 # label_name   : the world model name, always {LABEL_PREFIX}<barcode>. The
@@ -445,7 +507,9 @@ def write_manifest(assets: list[Asset], dry: bool) -> None:
 #
 # Substrate {TAG_W*1000:.1f} x {TAG_H*1000:.1f} x {TAG_T*1000:.2f} mm. Bar height {BAR_H*1000:.0f} mm, which is what forces the
 # scanner's roll limit down to atan(({BAR_H*1000:.1f} + {BEAM_SPOT*1000:.1f}) / {symbol_modules('0000000')*MODULE_M*1000:.2f}) = {roll_limit_deg():.1f} deg,
-# far tighter than the LS2208's published +/-30 deg. The denominator is the
+# far tighter than the LS2208's published roll tolerance of +/-60 deg. The
+# published SKEW tolerance is +/-10 deg and is a separate, independent gate;
+# do not confuse the two. The denominator is the
 # SYMBOL width incl. quiet zones, not the {PRINT_W*1000:.0f} mm print area, and the numerator
 # includes the beam spot; quoting a bare atan({BAR_H*1000:.0f}/{PRINT_W*1000:.0f}) = 6.1 deg understates it.
 #
@@ -557,13 +621,15 @@ def main() -> int:
     n_mod = symbol_modules(assets[0].code)
     print(
         f"{len(assets)} assets, codes {assets[0].code}..{assets[-1].code}\n"
-        f"Code 128 Subset B, {n_mod} modules incl. quiet zones, {MIL} mil\n"
+        f"Code 128 Subset B, {n_mod} modules incl. quiet zones, "
+        f"{MIL:.4f} mil\n"
         f"  symbol {n_mod * MODULE_M * 1000:.2f} mm wide in a "
         f"{PRINT_W * 1000:.0f} mm print area\n"
         f"  raster {PX_PER_MODULE} px/module -> "
         f"{int(round(TAG_W * PX_PER_M))}x{int(round(TAG_H * PX_PER_M))} px "
         f"per label, saved rotated {TEXTURE_ROTATE_DEG} deg for the box UV\n"
-        f"  LS2208 depth of field at {MIL} mil: 0.0381-0.2540 m\n"
+        f"  LS2208 depth of field at {MIL:.4f} mil: 0.04440-0.50873 m "
+        f"(derived, not a datasheet row)\n"
         f"  scanner roll limit from this label: {roll_limit_deg():.1f} deg\n"
     )
 
