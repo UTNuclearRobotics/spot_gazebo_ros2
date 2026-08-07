@@ -87,6 +87,13 @@ class QuadrupedController: public rclcpp::Node
     double loop_period_;
     std::array<float, 12> last_valid_joints_;
 
+    // Slew limiting on the published joint targets. last_published_joints_ is
+    // what actually went out on the wire last cycle (post-clamp), which is what
+    // the rate limit must be measured against — last_valid_joints_ is raw IK
+    // output and can jump.
+    double max_joint_velocity_;
+    std::array<float, 12> last_published_joints_;
+
     void controlLoop_();
     
     void publishJoints_(float target_joints[12]);

@@ -48,6 +48,13 @@ QuadrupedController::QuadrupedController():
 
     double loop_rate = 200.0;
 
+    // Per-joint rate cap for published targets, rad/s. Sized to sit well above
+    // normal gait and only catch discontinuities: a 0.25 s swing traversing
+    // ~1 rad is ~4 rad/s, so 20 rad/s leaves ~5x headroom and never shapes a
+    // healthy step. Lower it if resumes still land hard; raise it if fast
+    // swings visibly lag their targets.
+    max_joint_velocity_ = 20.0;
+
     this->get_parameter("gait.pantograph_leg",         gait_config_.pantograph_leg);
     this->get_parameter("gait.max_linear_velocity_x",  gait_config_.max_linear_velocity_x);
     this->get_parameter("gait.max_linear_velocity_y",  gait_config_.max_linear_velocity_y);
@@ -64,6 +71,7 @@ QuadrupedController::QuadrupedController():
     this->get_parameter("gazebo",                      in_gazebo_);
     this->get_parameter("joint_controller_topic",      joint_control_topic);
     this->get_parameter("loop_rate",                   loop_rate);
+    this->get_parameter("max_joint_velocity",          max_joint_velocity_);
     this->get_parameter("urdf",                        urdf);
     
     cmd_vel_subscription_ = this->create_subscription<geometry_msgs::msg::Twist>(
@@ -94,6 +102,7 @@ QuadrupedController::QuadrupedController():
 
     loop_period_ = 1.0 / loop_rate;
     last_valid_joints_.fill(std::numeric_limits<float>::quiet_NaN());
+    last_published_joints_.fill(std::numeric_limits<float>::quiet_NaN());
 
     // Drive the control loop off the node clock (sim time when use_sim_time
     // is set) instead of a wall timer. The gait phase generator samples sim
@@ -226,12 +235,53 @@ void QuadrupedController::publishJoints_(float target_joints[12])
         // current position, so joints only ever traversed the start of each
         // ramp and permanently lagged their targets.
         point.time_from_start = rclcpp::Duration::from_seconds(loop_period_);
+
+        // Slew limit. When a burst in /clock jumps the gait phase, the foot
+        // target can leave leg reach for a cycle or two; IK aborts, the pose is
+        // held, and phase keeps advancing. The pose commanded on the cycle
+        // reach is regained is therefore discontinuous, and against the leg PID
+        // (p=600) that lands as a slam rather than a placement — the foot hits
+        // unevenly and the next stride topples the robot.
+        //
+        // Capping the per-cycle change ramps back onto the trajectory instead
+        // of stepping onto it. Deliberately clamped against the last PUBLISHED
+        // target, not last_valid_joints_: consecutive clamped cycles must chain,
+        // otherwise a multi-cycle catch-up re-introduces the jump on cycle two.
+        const float max_delta =
+            static_cast<float>(max_joint_velocity_ * loop_period_);
         for(size_t i = 0; i < 12; i++)
         {
-            point.positions[i] = target_joints[i];
+            float commanded = target_joints[i];
+            if(!std::isnan(last_published_joints_[i]))
+            {
+                const float delta = commanded - last_published_joints_[i];
+                if(delta > max_delta)
+                    commanded = last_published_joints_[i] + max_delta;
+                else if(delta < -max_delta)
+                    commanded = last_published_joints_[i] - max_delta;
+            }
+            point.positions[i] = commanded;
+            last_published_joints_[i] = commanded;
         }
 
         joints_cmd_msg.points.push_back(point);
+
+        // Hold point. Under rapid RTF fluctuation /clock arrives in bursts and
+        // the next command can land later than one loop_period, leaving the gz
+        // JointTrajectoryController with an exhausted trajectory mid-gait.
+        // Repeating the SAME positions further out gives it something to track
+        // through the gap instead of running dry.
+        //
+        // This deliberately does not stretch the first point's duration: the
+        // ramp the JTC actually follows on time is still exactly loop_period_,
+        // so nominal tracking is bit-identical to before and the 1/60 s lag
+        // regression noted above is not reintroduced. The second point only
+        // ever takes effect when a command is late, and because it repeats the
+        // target rather than extrapolating, a late command degrades to "hold
+        // the commanded pose" rather than drifting somewhere unplanned.
+        trajectory_msgs::msg::JointTrajectoryPoint hold = point;
+        hold.time_from_start = rclcpp::Duration::from_seconds(3.0 * loop_period_);
+        joints_cmd_msg.points.push_back(hold);
         joint_commands_publisher_->publish(joints_cmd_msg);
     }
 
