@@ -39,6 +39,23 @@ namespace champ
             typedef unsigned long int Time;
             static inline Time now() { return time_us(); }
 
+            // Everything run() mutates. Exposed so a caller can evaluate the
+            // gait at FUTURE times (trajectory lookahead) and then put the live
+            // gait back exactly as it was.
+            //
+            // This is not optional for such a caller: run() advances
+            // last_touchdown_ toward whatever time it is handed, and Time is
+            // unsigned, so once last_touchdown_ sits in the future the next
+            // real cycle computes (time - last_touchdown_) as ~2^64 us.
+            struct State
+            {
+                Time last_touchdown;
+                bool has_swung;
+                bool has_started;
+                float stance_phase_signal[4];
+                float swing_phase_signal[4];
+            };
+
         private:
             champ::QuadrupedBase *base_;
 
@@ -55,7 +72,33 @@ namespace champ
                 stance_phase_signal{0.0f,0.0f,0.0f,0.0f},
                 swing_phase_signal{0.0f,0.0f,0.0f,0.0f}
             {
-            }        
+            }
+
+            State saveState() const
+            {
+                State state;
+                state.last_touchdown = last_touchdown_;
+                state.has_swung = has_swung_;
+                state.has_started = has_started;
+                for(unsigned int i = 0; i < 4; i++)
+                {
+                    state.stance_phase_signal[i] = stance_phase_signal[i];
+                    state.swing_phase_signal[i] = swing_phase_signal[i];
+                }
+                return state;
+            }
+
+            void restoreState(const State &state)
+            {
+                last_touchdown_ = state.last_touchdown;
+                has_swung_ = state.has_swung;
+                has_started = state.has_started;
+                for(unsigned int i = 0; i < 4; i++)
+                {
+                    stance_phase_signal[i] = state.stance_phase_signal[i];
+                    swing_phase_signal[i] = state.swing_phase_signal[i];
+                }
+            }
 
             void run(float target_velocity, float step_length, Time time = now())
             {

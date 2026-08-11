@@ -99,8 +99,22 @@ namespace champ
             {
             }
 
+            // prev_foot_position_ is the only cross-call state generate() reads
+            // (it is what a both-signals-zero cycle holds the foot at), so a
+            // caller evaluating the gait at future times must save and restore
+            // it alongside the phase generator's state.
+            geometry::Transformation prevFootPosition() const
+            {
+                return prev_foot_position_;
+            }
+
+            void prevFootPosition(const geometry::Transformation &position)
+            {
+                prev_foot_position_ = position;
+            }
+
             void generate(geometry::Transformation &foot_position, float step_length, float rotation, float swing_phase_signal, float stance_phase_signal)
-            {    
+            {
                 updateControlPointsHeight(leg_->gait_config->swing_height);
 
                 //ensures the prev_foot_position_ is not empty on first run

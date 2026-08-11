@@ -64,7 +64,41 @@ namespace champ
                 trajectory_planners_[total_legs++] = &rh;
             }
 
-            static void transformLeg(float &step_length, float &rotation, QuadrupedLeg &leg, 
+            // Complete snapshot of the gait state velocityCommand() mutates:
+            // the phase generator's touchdown reference and signals, each
+            // planner's previous foot position, and the per-leg stance/swing
+            // flag the planners write. Save before evaluating the gait at
+            // future times, restore after, and the live gait is untouched.
+            struct GaitState
+            {
+                champ::PhaseGenerator::State phase;
+                geometry::Transformation prev_foot_positions[4];
+                bool gait_phases[4];
+            };
+
+            GaitState saveGaitState()
+            {
+                GaitState state;
+                state.phase = phase_generator.saveState();
+                for(unsigned int i = 0; i < 4; i++)
+                {
+                    state.prev_foot_positions[i] = trajectory_planners_[i]->prevFootPosition();
+                    state.gait_phases[i] = base_->legs[i]->gait_phase();
+                }
+                return state;
+            }
+
+            void restoreGaitState(const GaitState &state)
+            {
+                phase_generator.restoreState(state.phase);
+                for(unsigned int i = 0; i < 4; i++)
+                {
+                    trajectory_planners_[i]->prevFootPosition(state.prev_foot_positions[i]);
+                    base_->legs[i]->gait_phase(state.gait_phases[i]);
+                }
+            }
+
+            static void transformLeg(float &step_length, float &rotation, QuadrupedLeg &leg,
                               float step_x, float step_y, float theta)
             {              
                 //translate leg in x and y axis, and rotate in z axix

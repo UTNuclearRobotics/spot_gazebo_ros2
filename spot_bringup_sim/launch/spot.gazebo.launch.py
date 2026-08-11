@@ -39,7 +39,7 @@ def generate_launch_description():
             launch_arguments={
                 'gz_args': [
                     PathJoinSubstitution([pkg_spot_gazebo, 'worlds', world_file]),
-                    ' -s -r --headless-rendering',
+                    # ' -s -r --headless-rendering',
                 ],
             }.items(),
     )

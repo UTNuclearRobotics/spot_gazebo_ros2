@@ -94,7 +94,48 @@ class QuadrupedController: public rclcpp::Node
     double max_joint_velocity_;
     std::array<float, 12> last_published_joints_;
 
+    // Sim time at which the last joint command actually went out. The gap
+    // between consecutive publishes is NOT loop_period_ under load — /clock
+    // arrives in bursts and the sim-time loop timer fires once per burst — so
+    // it is measured rather than assumed.
+    rclcpp::Time last_publish_time_;
+
+    // Upper bound in seconds on how much of a measured gap is honoured when
+    // sizing the trajectory ramp and the slew allowance. Caps how far a single
+    // command tries to catch up after a long stall.
+    double max_command_interval_;
+
+    // Command-interval instrumentation. Reported every timing_report_period_
+    // seconds of sim time; set that parameter to 0 to disable.
+    double timing_report_period_;
+    double interval_sum_;
+    double interval_worst_;
+    unsigned long interval_count_;
+    unsigned long interval_late_;
+    rclcpp::Time next_timing_report_;
+
+    // Trajectory lookahead. Gait phase is a pure function of time, so the foot
+    // targets 10-150 ms from now are already known. Publishing them as extra
+    // trajectory points means a command that arrives late finds a LIVE, moving
+    // trajectory instead of an exhausted one — the leg keeps walking through
+    // the gap rather than holding at a reached target. Under normal 10 ms
+    // cycles the next command replaces the trajectory before any of these
+    // points is reached, so nominal behaviour is unchanged.
+    static constexpr size_t kMaxLookaheadPoints = 8;
+
+    struct LookaheadSample
+    {
+        double time_from_start;
+        std::array<float, 12> positions;
+    };
+
+    double lookahead_horizon_;
+    int lookahead_points_;
+    std::array<LookaheadSample, kMaxLookaheadPoints> lookahead_;
+    size_t lookahead_count_;
+
     void controlLoop_();
+    void buildLookahead_(const rclcpp::Time &now, const float current_joints[12]);
     
     void publishJoints_(float target_joints[12]);
     void publishFootContacts_(bool foot_contacts[4]);
