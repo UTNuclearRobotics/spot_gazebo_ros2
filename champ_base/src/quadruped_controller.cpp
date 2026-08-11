@@ -68,7 +68,7 @@ QuadrupedController::QuadrupedController():
     // under load. Points are spaced by doubling from 2*loop_period_, so they
     // are dense where accuracy matters and sparse out at the horizon.
     lookahead_horizon_ = 0.15;
-    lookahead_points_ = 5;
+    lookahead_points_ = 4;
     lookahead_count_ = 0;
 
     this->get_parameter("gait.pantograph_leg",         gait_config_.pantograph_leg);
