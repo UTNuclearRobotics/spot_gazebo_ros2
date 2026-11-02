@@ -20,6 +20,28 @@
 # would against real hardware and get immediate, successful responses, while
 # CHAMP/Gazebo handles the actual locomotion underneath.
 #
+# The body services carry the real robot's semantics, because code that drives
+# them (e-stop, power, stand) must behave in sim as it will on the robot:
+#
+#   - Velocity goes through the driver, as on hardware: ~/cmd_vel is forwarded
+#     to CHAMP (~/sim/cmd_vel) only while the robot is powered, standing, not
+#     e-stopped and not frozen, and each command lapses after `cmd_duration`
+#     s, as the real driver's velocity commands do (end_time).
+#   - estop/gentle settles the robot (it crouches over `settle_s`) and then
+#     cuts motor power;
+#     estop/hard cuts at once; estop/release clears the e-stop and leaves the
+#     motors off. power_on is refused while e-stopped; stand and sit are
+#     refused without motor power, and stand raises the body over `stand_s` s
+#     after it is accepted, reporting standing once it is up -- the real stand
+#     command is non-blocking, so a client must wait for ~/status/feedback to
+#     report standing. The body's height moves continuously both ways: a step
+#     in CHAMP's body pose throws the body up and can topple it.
+#   - ~/status/power_state, ~/status/estop and ~/status/feedback are published
+#     with the real driver's message types and topic names.
+#
+#   Not modelled: the lease (claim is not required first), the estop
+#   keepalive, and the physics of settling and standing beyond a crouch.
+#
 # The action servers (navigate_to, walk_to) succeed IMMEDIATELY: locomotion is
 # owned by the navigation stack / CHAMP, so all this shim has to do is report a
 # clean success back to the behavior tree. Every terminal path calls
@@ -47,6 +69,8 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.action import ActionServer, GoalResponse, CancelResponse
 from rclpy.qos import qos_profile_sensor_data
 
+from geometry_msgs.msg import Pose, Twist
+from rclpy.qos import DurabilityPolicy, QoSProfile
 from std_srvs.srv import Trigger, SetBool
 
 from spot_msgs.srv import (
@@ -60,7 +84,8 @@ from spot_msgs.srv import (
     RegisterPayload,
 )
 from spot_msgs.action import NavigateTo, WalkTo
-from spot_msgs.msg import BatteryStateArray, BatteryState
+from spot_msgs.msg import (BatteryStateArray, BatteryState, EStopState, EStopStateArray,
+                           Feedback, PowerState)
 
 ACTION_SETTLE_S = 1.0
 
@@ -80,11 +105,30 @@ class SimSpotDriver(Node):
 
         cb = ReentrantCallbackGroup()
 
-        # ---- Minimal internal state (kept self-consistent) ----------------
+        # ---- Body state, as the real robot reports it ---------------------
+        # Starts powered and standing so a plain sim launch walks at once (as
+        # it always has); `start_standing: false` starts as a robot boots,
+        # motors off and lying down.
+        self.declare_parameter('start_standing', True)
+        # How long a velocity command lasts (the real driver's cmd_duration).
+        self.declare_parameter('cmd_duration', 0.125)
+        # Sim seconds from an accepted stand to standing, and from a gentle
+        # e-stop to motor cut (the robot settles first).
+        self.declare_parameter('stand_s', 1.5)
+        self.declare_parameter('settle_s', 1.5)
+        # How far below nominal height CHAMP holds the body while sitting.
+        self.declare_parameter('sit_drop', 0.25)
+        up = bool(self.get_parameter('start_standing').value)
         self._claimed = False
-        self._powered_on = False
-        self._standing = False
+        self._powered_on = up
+        self._standing = up
         self._estopped = False
+        self._frozen = False
+        self._pending = None          # (deadline_s, action) for stand / motor cut
+        self._last_cmd = None         # (stamp_s, Twist)
+        self._body_pose = Pose()      # last ~/body_pose request
+        self._drop = 0.0 if up else float(self.get_parameter('sit_drop').value)
+        self._last_tick = None        # body height is ramped between ticks
         self._docked = False
         self._stair_mode = False
         self._locomotion_mode = 1        # HINT_AUTO
@@ -147,6 +191,23 @@ class SimSpotDriver(Node):
         self._battery_pub = self.create_publisher(
             BatteryStateArray, '~/status/battery_states', qos_profile_sensor_data)
         self.create_timer(0.5, self._publish_battery, callback_group=cb)
+        # Same names, types and depths as spot_ros.py.
+        self._power_pub = self.create_publisher(PowerState, '~/status/power_state', 1)
+        self._estop_pub = self.create_publisher(EStopStateArray, '~/status/estop', 1)
+        latched = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
+        self._feedback_pub = self.create_publisher(Feedback, '~/status/feedback', latched)
+
+        # ================= Locomotion ======================================
+        # Commands in on the real driver's topics; out to CHAMP only as the
+        # robot's state allows.
+        self.create_subscription(Twist, '~/cmd_vel', self._on_cmd_vel,
+                                 qos_profile_sensor_data, callback_group=cb)
+        self.create_subscription(Pose, '~/body_pose', self._on_body_pose,
+                                 qos_profile_sensor_data, callback_group=cb)
+        self._gait_vel_pub = self.create_publisher(Twist, '~/sim/cmd_vel', 10)
+        self._gait_pose_pub = self.create_publisher(Pose, '~/sim/body_pose', 1)
+        self.create_timer(0.05, self._tick, callback_group=cb)
+        self._publish_state()
 
         self.get_logger().info(
             'sim_spot_driver up: emulating all /spot_driver services + action servers '
@@ -157,6 +218,8 @@ class SimSpotDriver(Node):
     # Simulated battery state (matches spot_driver/status/battery_states)
     # ----------------------------------------------------------------------
     def _publish_battery(self):
+        # The real driver refreshes power and e-stop status continually; so do we.
+        self._publish_state()
         pct = float(self.get_parameter('battery_percentage').value)
         stamp = self.get_clock().now().to_msg()
         battery = BatteryState()
@@ -183,6 +246,93 @@ class SimSpotDriver(Node):
         self._battery_pub.publish(msg)
 
     # ----------------------------------------------------------------------
+    # Body state: what the robot will do, and what it reports
+    # ----------------------------------------------------------------------
+    def _now(self) -> float:
+        return self.get_clock().now().nanoseconds * 1e-9
+
+    def _mobile(self) -> bool:
+        return self._powered_on and self._standing and not self._estopped and not self._frozen
+
+    def _on_cmd_vel(self, msg: Twist):
+        self._last_cmd = (self._now(), msg)
+
+    def _on_body_pose(self, msg: Pose):
+        self._body_pose = msg
+
+    def _tick(self):
+        """Advance pending transitions and drive CHAMP from the body state."""
+        now = self._now()
+        # A stand completes once the body is up, not merely when its time is.
+        due = self._pending is not None and now >= self._pending[0]
+        if due and self._pending[1] == 'stand' and self._drop > 0.0:
+            due = False
+        if due:
+            _, action = self._pending
+            self._pending = None
+            if action == 'stand' and self._powered_on and not self._estopped:
+                self._standing = True
+            elif action == 'cut':
+                self._powered_on = False
+            self._publish_state()
+
+        cmd = Twist()
+        lapse = float(self.get_parameter('cmd_duration').value)
+        if self._mobile() and self._last_cmd is not None and now - self._last_cmd[0] <= lapse:
+            cmd = self._last_cmd[1]
+        self._gait_vel_pub.publish(cmd)
+
+        # Lowered while not standing, raised during a stand, at the rate that
+        # covers the full drop in settle_s / stand_s.
+        sit_drop = float(self.get_parameter('sit_drop').value)
+        dt = 0.0 if self._last_tick is None else max(0.0, now - self._last_tick)
+        self._last_tick = now
+        rising = self._standing or (self._pending is not None and self._pending[1] == 'stand')
+        if rising:
+            step = sit_drop / max(float(self.get_parameter('stand_s').value), 1e-3) * dt
+            self._drop = max(0.0, self._drop - step)
+        else:
+            step = sit_drop / max(float(self.get_parameter('settle_s').value), 1e-3) * dt
+            self._drop = min(sit_drop, self._drop + step)
+        pose = Pose()
+        if self._standing and self._drop == 0.0:
+            pose = self._body_pose
+        else:
+            pose.position.z = self._body_pose.position.z - self._drop
+        pose.orientation.w = pose.orientation.w or 1.0
+        self._gait_pose_pub.publish(pose)
+
+    def _publish_state(self):
+        stamp = self.get_clock().now().to_msg()
+        power = PowerState()
+        power.stamp = stamp
+        power.motor_power_state = PowerState.STATE_ON if self._powered_on else PowerState.STATE_OFF
+        power.shore_power_state = PowerState.STATE_OFF_SHORE_POWER
+        power.locomotion_charge_percentage = float(self.get_parameter('battery_percentage').value)
+        self._power_pub.publish(power)
+
+        estop = EStopState()
+        estop.header.stamp = stamp
+        estop.name = 'software_estop'
+        estop.type = EStopState.TYPE_SOFTWARE
+        estop.state = EStopState.STATE_ESTOPPED if self._estopped else EStopState.STATE_NOT_ESTOPPED
+        self._estop_pub.publish(EStopStateArray(estop_states=[estop]))
+
+        fb = Feedback()
+        fb.standing = self._standing
+        fb.sitting = not self._standing
+        fb.moving = False
+        fb.species = 'spot'
+        fb.nickname = 'sim'
+        self._feedback_pub.publish(fb)
+
+    def _fail(self, response, msg):
+        self.get_logger().warn(f'[sim] {msg}')
+        response.success = False
+        response.message = msg
+        return response
+
+    # ----------------------------------------------------------------------
     # Small helper to fill and log a Trigger-style (success, message) response
     # ----------------------------------------------------------------------
     def _ok(self, response, msg):
@@ -204,51 +354,89 @@ class SimSpotDriver(Node):
         self._claimed = True
         return self._ok(resp, 'force_claim: lease force-acquired (simulated)')
 
+    def _command_refused(self):
+        """Why the robot would refuse a body command now, as robot_command does."""
+        if self._frozen:
+            return 'Cannot issue a command to the robot while frozen'
+        if self._estopped:
+            return 'Robot is estopped. Please use an external E-Stop client.'
+        if not self._powered_on:
+            return 'Motor power is off'
+        return None
+
     def _h_stop(self, req, resp):
+        if (why := self._command_refused()):
+            return self._fail(resp, f'stop: {why}')
+        self._last_cmd = None
         return self._ok(resp, 'stop: motion halted (simulated)')
 
     def _h_self_right(self, req, resp):
-        self._standing = True
+        if (why := self._command_refused()):
+            return self._fail(resp, f'self_right: {why}')
         return self._ok(resp, 'self_right: robot self-righted (simulated)')
 
     def _h_sit(self, req, resp):
+        if (why := self._command_refused()):
+            return self._fail(resp, f'sit: {why}')
         self._standing = False
+        self._pending = None
+        self._publish_state()
         return self._ok(resp, 'sit: robot sitting (simulated)')
 
     def _h_stand(self, req, resp):
-        self._standing = True
-        return self._ok(resp, 'stand: robot standing (simulated)')
+        # Non-blocking on the robot: accepted now, standing once the body is up.
+        if (why := self._command_refused()):
+            return self._fail(resp, f'stand: {why}')
+        if not self._standing:
+            self._pending = (self._now() + float(self.get_parameter('stand_s').value), 'stand')
+        return self._ok(resp, 'stand: command accepted (simulated)')
 
     def _h_power_on(self, req, resp):
+        if self._estopped:
+            return self._fail(resp, 'power_on: Robot is estopped. Please use an external E-Stop client.')
         self._powered_on = True
+        self._publish_state()
         return self._ok(resp, 'power_on: motors powered on (simulated)')
 
     def _h_power_off(self, req, resp):
-        self._powered_on = False
+        # Safe power off: sit, then cut.
         self._standing = False
+        self._powered_on = False
+        self._pending = None
+        self._publish_state()
         return self._ok(resp, 'power_off: motors safely powered off (simulated)')
 
     # ---- e-stop ----
     def _h_estop_freeze(self, req, resp):
-        self._estopped = True
-        return self._ok(resp, 'estop/freeze: e-stop engaged (simulated)')
+        self._frozen = True
+        return self._ok(resp, 'estop/freeze: robot frozen in place (simulated)')
 
     def _h_estop_unfreeze(self, req, resp):
-        self._estopped = False
-        return self._ok(resp, 'estop/unfreeze: e-stop cleared (simulated)')
+        self._frozen = False
+        return self._ok(resp, 'Robot can now accept new commands')
 
     def _h_estop_hard(self, req, resp):
         self._estopped = True
+        self._standing = False
         self._powered_on = False
+        self._pending = None
+        self._publish_state()
         return self._ok(resp, 'estop/hard: hard e-stop, motors cut (simulated)')
 
     def _h_estop_gentle(self, req, resp):
+        # ESTOP_LEVEL_SETTLE_THEN_CUT: the body settles, then the motors cut.
         self._estopped = True
-        return self._ok(resp, 'estop/gentle: gentle e-stop (simulated)')
+        self._standing = False
+        if self._powered_on:
+            self._pending = (self._now() + float(self.get_parameter('settle_s').value), 'cut')
+        self._publish_state()
+        return self._ok(resp, 'estop/gentle: settling, then cutting motor power (simulated)')
 
     def _h_estop_release(self, req, resp):
+        # Clears the e-stop only; the motors stay off until power_on.
         self._estopped = False
-        return self._ok(resp, 'estop/release: e-stop released (simulated)')
+        self._publish_state()
+        return self._ok(resp, 'EStop disengaged; robot can be powered on again')
 
     # ---- docking ----
     def _h_undock(self, req, resp):

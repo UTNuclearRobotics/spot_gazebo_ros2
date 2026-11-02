@@ -33,3 +33,6 @@ log
 *.exe
 *.out
 *.app
+
+**/__pycache__/
+*.py[cod]

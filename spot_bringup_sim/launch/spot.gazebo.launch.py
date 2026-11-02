@@ -110,8 +110,12 @@ def generate_launch_description():
             joints_param,
             gait_param
         ],
+        # Velocity and body pose reach the legs through the driver, which
+        # passes them on only while the robot is powered, standing and not
+        # e-stopped (sim_spot_driver.py) -- as the real robot does.
         remappings=[
-            ("/cmd_vel/smooth", "/spot_driver/cmd_vel"),
+            ("/cmd_vel/smooth", "/spot_driver/sim/cmd_vel"),
+            ("/body_pose", "/spot_driver/sim/body_pose"),
         ],
     )
 
@@ -149,7 +153,7 @@ def generate_launch_description():
         ],
         remappings=[
             ('/joint_states', '/spot_driver/joint_states'),
-            ("/cmd_vel/smooth", "/spot_driver/cmd_vel"),
+            ("/cmd_vel/smooth", "/spot_driver/sim/cmd_vel"),
         ],
     )
 
