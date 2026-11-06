@@ -39,6 +39,15 @@
 #   - ~/status/power_state, ~/status/estop and ~/status/feedback are published
 #     with the real driver's message types and topic names.
 #
+#   - Balance (opt-in: `balance_kp` > 0). CHAMP's gait is kinematic, with no
+#     feedback from the body's attitude, so on rough ground (the SubT mine's
+#     collision mesh) small tilts build into a rollover; on a flat plane it
+#     walks fine. A real Spot balances. While standing, roll and pitch from
+#     the IMU's orientation (`imu_topic`; standing in for Spot's state
+#     estimate: the gait's accelerations swamp gravity, so the accelerometer
+#     alone cannot level it) feed a PI loop that tilts CHAMP's body pose
+#     against them (clamped to `balance_max` rad), on top of ~/body_pose.
+#
 #   Not modelled: the lease (claim is not required first), the estop
 #   keepalive, and the physics of settling and standing beyond a crouch.
 #
@@ -59,6 +68,7 @@
 #   ros2 run <your_pkg> sim_spot_driver.py --ros-args -r __ns:=/
 # ---------------------------------------------------------------------------
 
+import math
 import time
 
 import rclpy
@@ -70,6 +80,7 @@ from rclpy.action import ActionServer, GoalResponse, CancelResponse
 from rclpy.qos import qos_profile_sensor_data
 
 from geometry_msgs.msg import Pose, Twist
+from sensor_msgs.msg import Imu
 from rclpy.qos import DurabilityPolicy, QoSProfile
 from std_srvs.srv import Trigger, SetBool
 
@@ -88,6 +99,24 @@ from spot_msgs.msg import (BatteryStateArray, BatteryState, EStopState, EStopSta
                            Feedback, PowerState)
 
 ACTION_SETTLE_S = 1.0
+
+
+def rpy_of(q):
+    roll = math.atan2(2.0 * (q.w * q.x + q.y * q.z), 1.0 - 2.0 * (q.x * q.x + q.y * q.y))
+    pitch = math.asin(max(-1.0, min(1.0, 2.0 * (q.w * q.y - q.z * q.x))))
+    yaw = math.atan2(2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
+    return roll, pitch, yaw
+
+
+def set_rpy(q, roll, pitch, yaw):
+    cr, sr = math.cos(roll / 2), math.sin(roll / 2)
+    cp, sp = math.cos(pitch / 2), math.sin(pitch / 2)
+    cy, sy = math.cos(yaw / 2), math.sin(yaw / 2)
+    q.w = cr * cp * cy + sr * sp * sy
+    q.x = sr * cp * cy - cr * sp * sy
+    q.y = cr * sp * cy + sr * cp * sy
+    q.z = cr * cp * sy - sr * sp * cy
+
 
 class SimSpotDriver(Node):
     """Simulation stand-in for the real spot_driver node.
@@ -206,6 +235,16 @@ class SimSpotDriver(Node):
                                  qos_profile_sensor_data, callback_group=cb)
         self._gait_vel_pub = self.create_publisher(Twist, '~/sim/cmd_vel', 10)
         self._gait_pose_pub = self.create_publisher(Pose, '~/sim/body_pose', 1)
+        # Balance: PI on the body's roll and pitch (rad), off while balance_kp is 0.
+        self.declare_parameter('balance_kp', 0.0)
+        self.declare_parameter('balance_ki', 0.0)
+        self.declare_parameter('balance_max', 0.3)
+        self.declare_parameter('imu_topic', '/spot/imu')
+        self._attitude = None             # (roll, pitch) from the IMU's orientation
+        self._balance_i = [0.0, 0.0]      # integrated roll, pitch error
+        if float(self.get_parameter('balance_kp').value) > 0.0:
+            self.create_subscription(Imu, self.get_parameter('imu_topic').value, self._on_imu,
+                                     qos_profile_sensor_data, callback_group=cb)
         self.create_timer(0.05, self._tick, callback_group=cb)
         self._publish_state()
 
@@ -260,6 +299,35 @@ class SimSpotDriver(Node):
     def _on_body_pose(self, msg: Pose):
         self._body_pose = msg
 
+    def _on_imu(self, msg: Imu):
+        q = msg.orientation
+        if q.w or q.x or q.y or q.z:
+            self._attitude = rpy_of(q)[:2]
+
+    def _balanced(self, pose: Pose, dt: float) -> Pose:
+        """`pose` tilted against the body's measured roll and pitch.
+
+        CHAMP rotates the feet opposite a requested body orientation, so a
+        requested roll of -k * roll moves the low side's feet down and the high
+        side's up, levelling the body.
+        """
+        kp = float(self.get_parameter('balance_kp').value)
+        if kp <= 0.0 or self._attitude is None:
+            return pose
+        ki = float(self.get_parameter('balance_ki').value)
+        lim = float(self.get_parameter('balance_max').value)
+        out = Pose()
+        out.position = pose.position
+        req = list(rpy_of(pose.orientation)) if pose.orientation.w or pose.orientation.x \
+            or pose.orientation.y or pose.orientation.z else [0.0, 0.0, 0.0]
+        for k in (0, 1):
+            err = self._attitude[k]
+            if ki > 0.0:
+                self._balance_i[k] = max(-lim / ki, min(lim / ki, self._balance_i[k] + err * dt))
+            req[k] = max(-lim, min(lim, req[k] - kp * err - ki * self._balance_i[k]))
+        set_rpy(out.orientation, *req)
+        return out
+
     def _tick(self):
         """Advance pending transitions and drive CHAMP from the body state."""
         now = self._now()
@@ -296,8 +364,9 @@ class SimSpotDriver(Node):
             self._drop = min(sit_drop, self._drop + step)
         pose = Pose()
         if self._standing and self._drop == 0.0:
-            pose = self._body_pose
+            pose = self._balanced(self._body_pose, dt)
         else:
+            self._balance_i = [0.0, 0.0]
             pose.position.z = self._body_pose.position.z - self._drop
         pose.orientation.w = pose.orientation.w or 1.0
         self._gait_pose_pub.publish(pose)

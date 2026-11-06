@@ -470,7 +470,9 @@
         <topic>model/spot/imu</topic>
         <gz_frame_id>imu</gz_frame_id>
         <imu>
-          <enable_orientation>0</enable_orientation>
+          <!-- Spot's state estimate knows its attitude; sim_spot_driver's
+               balance loop reads it from here. -->
+          <enable_orientation>1</enable_orientation>
           <angular_velocity>
             <x>
               <noise type="gaussian">
@@ -547,6 +549,15 @@
     <xacro:sdf_fixed_joint name="imu_j" parent="base_link" child="imu"/>
 
     <!-- ================= legs ================= -->
+    <!-- Leg stiffness and torque caps of the gz PID position controllers, which
+         stand in for Spot's own leg control. Knee cap: the peak of the real
+         knee's torque curve (Spot SDK, Knee Torque Limits: 93-113 N·m over the
+         -2.04..-1.6 rad a walking knee spans). Stiffer legs (P 1500, D 40, caps
+         200/250) rolled over sooner on the SubT mine's mesh (sensor_bench PLAN.md). -->
+    <xacro:property name="leg_p" value="500"/>
+    <xacro:property name="leg_d" value="20"/>
+    <xacro:property name="leg_hip_effort" value="80"/>
+    <xacro:property name="leg_knee_effort" value="113"/>
     <!-- One macro, four reflections. Frame offsets come from
          spot_frame_properties.xacro (identical to the hardware URDF); masses,
          inertias, joint limits/efforts, and contact tuning are sim physics
@@ -589,7 +600,7 @@
           <limit>
             <lower>-0.785398</lower>
             <upper>0.785398</upper>
-            <effort>80</effort>
+            <effort>${leg_hip_effort}</effort>
             <velocity>15.0</velocity>
           </limit>
           <dynamics>
@@ -636,7 +647,7 @@
           <limit>
             <lower>-0.898845</lower>
             <upper>2.29511</upper>
-            <effort>80</effort>
+            <effort>${leg_hip_effort}</effort>
             <velocity>15.0</velocity>
           </limit>
           <dynamics>
@@ -705,7 +716,7 @@
           <limit>
             <lower>-2.7929</lower>
             <upper>-0.254801</upper>
-            <effort>80</effort>
+            <effort>${leg_knee_effort}</effort>
             <velocity>15.0</velocity>
           </limit>
           <dynamics>
@@ -1171,18 +1182,18 @@
       name="ignition::gazebo::systems::JointTrajectoryController">
       <topic>model/spot/joint_trajectory</topic>
 
-      <xacro:pid_joint joint="front_left_hip_x"  p="500" i="1" d="20"/>
-      <xacro:pid_joint joint="front_left_hip_y"  p="500" i="1" d="20"/>
-      <xacro:pid_joint joint="front_left_knee"   p="500" i="1" d="20"/>
-      <xacro:pid_joint joint="front_right_hip_x" p="500" i="1" d="20"/>
-      <xacro:pid_joint joint="front_right_hip_y" p="500" i="1" d="20"/>
-      <xacro:pid_joint joint="front_right_knee"  p="500" i="1" d="20"/>
-      <xacro:pid_joint joint="rear_left_hip_x"   p="500" i="1" d="20"/>
-      <xacro:pid_joint joint="rear_left_hip_y"   p="500" i="1" d="20"/>
-      <xacro:pid_joint joint="rear_left_knee"    p="500" i="1" d="20"/>
-      <xacro:pid_joint joint="rear_right_hip_x"  p="500" i="1" d="20"/>
-      <xacro:pid_joint joint="rear_right_hip_y"  p="500" i="1" d="20"/>
-      <xacro:pid_joint joint="rear_right_knee"   p="500" i="1" d="20"/>
+      <xacro:pid_joint joint="front_left_hip_x"  p="${leg_p}" i="1" d="${leg_d}"/>
+      <xacro:pid_joint joint="front_left_hip_y"  p="${leg_p}" i="1" d="${leg_d}"/>
+      <xacro:pid_joint joint="front_left_knee"   p="${leg_p}" i="1" d="${leg_d}"/>
+      <xacro:pid_joint joint="front_right_hip_x" p="${leg_p}" i="1" d="${leg_d}"/>
+      <xacro:pid_joint joint="front_right_hip_y" p="${leg_p}" i="1" d="${leg_d}"/>
+      <xacro:pid_joint joint="front_right_knee"  p="${leg_p}" i="1" d="${leg_d}"/>
+      <xacro:pid_joint joint="rear_left_hip_x"   p="${leg_p}" i="1" d="${leg_d}"/>
+      <xacro:pid_joint joint="rear_left_hip_y"   p="${leg_p}" i="1" d="${leg_d}"/>
+      <xacro:pid_joint joint="rear_left_knee"    p="${leg_p}" i="1" d="${leg_d}"/>
+      <xacro:pid_joint joint="rear_right_hip_x"  p="${leg_p}" i="1" d="${leg_d}"/>
+      <xacro:pid_joint joint="rear_right_hip_y"  p="${leg_p}" i="1" d="${leg_d}"/>
+      <xacro:pid_joint joint="rear_right_knee"   p="${leg_p}" i="1" d="${leg_d}"/>
 
       <!-- Arm joints — arm0_shoulder_roll is fixed and excluded -->
       <xacro:pid_joint joint="arm0_shoulder_yaw"   p="500" i="0" d="20"/>
